@@ -4,6 +4,7 @@ import android.media.AudioAttributes
 import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.AudioTrack
+import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.nio.ByteBuffer
@@ -18,6 +19,7 @@ class AudioPlayer {
     private val sampleRate = 22050
 
     fun prepare(audio: FloatArray) {
+        Log.d("Kokoro", "AudioPlayer prepare length=${audio.size}")
         val channelConfig = AudioFormat.CHANNEL_OUT_MONO
         val audioFormat = AudioFormat.ENCODING_PCM_16BIT
         val bufferSize = AudioTrack.getMinBufferSize(sampleRate, channelConfig, audioFormat)
@@ -50,6 +52,7 @@ class AudioPlayer {
     suspend fun play() = withContext(Dispatchers.IO) {
         val track = audioTrack ?: return@withContext
         val data = pcmData ?: return@withContext
+        Log.d("Kokoro", "AudioPlayer start play")
         isRunning = true
         track.play()
         while (position < data.size) {
@@ -63,16 +66,19 @@ class AudioPlayer {
         }
         track.stop()
         track.release()
+        Log.d("Kokoro", "AudioPlayer finished play")
         isRunning = false
         position = 0
     }
 
     fun pause() {
+        Log.d("Kokoro", "AudioPlayer pause")
         isPaused = true
         audioTrack?.pause()
     }
 
     fun resume() {
+        Log.d("Kokoro", "AudioPlayer resume")
         isPaused = false
         audioTrack?.play()
     }

@@ -47,6 +47,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.Alignment
+import android.util.Log
 import com.example.kokoro82m.utils.AudioPlayer
 import com.example.kokoro82m.utils.InterpolationMode
 import com.example.kokoro82m.utils.PhonemeConverter
@@ -77,6 +78,7 @@ fun BookScreen(
     var weights by remember { mutableStateOf(mapOf("af_sarah" to 1f)) }
     var interpolationMode by remember { mutableStateOf(InterpolationMode.LINEAR) }
     var speed by remember { mutableFloatStateOf(1.0f) }
+    var debugMessage by remember { mutableStateOf<String?>(null) }
 
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
@@ -144,21 +146,26 @@ fun BookScreen(
                     } else {
                         audioPlayer.resume()
                         if (currentLine == -1 && lines.isNotEmpty()) {
-                            playBook(
-                                session = session,
-                                phonemeConverter = phonemeConverter,
-                                styleLoader = styleLoader,
-                                selectedStyles = selectedStyles,
-                                weights = weights,
-                                mode = interpolationMode,
-                                speed = speed,
-                                lines = lines,
-                                audioPlayer = audioPlayer,
-                                context = context,
-                                scope = scope,
-                                onLineChanged = { currentLine = it },
-                                onFinished = { isPlaying = false }
-                            )
+                            try {
+                                debugMessage = null
+                                playBook(
+                                    session = session,
+                                    phonemeConverter = phonemeConverter,
+                                    styleLoader = styleLoader,
+                                    selectedStyles = selectedStyles,
+                                    weights = weights,
+                                    mode = interpolationMode,
+                                    speed = speed,
+                                    lines = lines,
+                                    audioPlayer = audioPlayer,
+                                    context = context,
+                                    scope = scope,
+                                    onLineChanged = { currentLine = it },
+                                    onFinished = { isPlaying = false }
+                                )
+                            } catch (e: Exception) {
+                                debugMessage = e.localizedMessage
+                            }
                         }
                         isPlaying = true
                     }
@@ -170,24 +177,29 @@ fun BookScreen(
             Button(
                 onClick = {
                     scope.launch {
-                        val mixedVector = mixStyles(
-                            styleLoader = styleLoader,
-                            styles = selectedStyles,
-                            weights = weights,
-                            mode = interpolationMode
-                        )
-                        val audioData = mutableListOf<Float>()
-                        for (line in lines) {
-                            val phonemes = phonemeConverter.phonemize(line)
-                            val (audio, _) = createAudioFromStyleVector(
-                                phonemes = phonemes,
-                                voice = mixedVector,
-                                speed = speed,
-                                session = session
+                        try {
+                            debugMessage = null
+                            val mixedVector = mixStyles(
+                                styleLoader = styleLoader,
+                                styles = selectedStyles,
+                                weights = weights,
+                                mode = interpolationMode
                             )
-                            audioData.addAll(audio.toList())
+                            val audioData = mutableListOf<Float>()
+                            for (line in lines) {
+                                val phonemes = phonemeConverter.phonemize(line)
+                                val (audio, _) = createAudioFromStyleVector(
+                                    phonemes = phonemes,
+                                    voice = mixedVector,
+                                    speed = speed,
+                                    session = session
+                                )
+                                audioData.addAll(audio.toList())
+                            }
+                            saveAudio(audioData.toFloatArray(), context)
+                        } catch (e: Exception) {
+                            debugMessage = e.localizedMessage
                         }
-                        saveAudio(audioData.toFloatArray(), context)
                     }
                 },
                 enabled = lines.isNotEmpty()
@@ -206,6 +218,14 @@ fun BookScreen(
                         .padding(4.dp)
                 )
             }
+        }
+
+        debugMessage?.let {
+            Text(
+                text = it,
+                color = Color.Red,
+                modifier = Modifier.padding(top = 8.dp)
+            )
         }
     }
 }
@@ -226,26 +246,30 @@ private fun playBook(
     onFinished: () -> Unit
 ) {
     scope.launch(Dispatchers.IO) {
-        val mixedVector = mixStyles(
-            styleLoader = styleLoader,
-            styles = selectedStyles,
-            weights = weights,
-            mode = mode
-        )
-        for ((index, line) in lines.withIndex()) {
-            onLineChanged(index)
-            val phonemes = phonemeConverter.phonemize(line)
-            val (audio, _) = createAudioFromStyleVector(
-                phonemes = phonemes,
-                voice = mixedVector,
-                speed = speed,
-                session = session
+        try {
+            val mixedVector = mixStyles(
+                styleLoader = styleLoader,
+                styles = selectedStyles,
+                weights = weights,
+                mode = mode
             )
-            audioPlayer.prepare(audio)
-            audioPlayer.play()
+            for ((index, line) in lines.withIndex()) {
+                onLineChanged(index)
+                val phonemes = phonemeConverter.phonemize(line)
+                val (audio, _) = createAudioFromStyleVector(
+                    phonemes = phonemes,
+                    voice = mixedVector,
+                    speed = speed,
+                    session = session
+                )
+                audioPlayer.prepare(audio)
+                audioPlayer.play()
+            }
+            onLineChanged(-1)
+            withContext(Dispatchers.Main) { onFinished() }
+        } catch (e: Exception) {
+            Log.e("Kokoro", "playBook failed: ${e.localizedMessage}")
         }
-        onLineChanged(-1)
-        withContext(Dispatchers.Main) { onFinished() }
     }
 }
 

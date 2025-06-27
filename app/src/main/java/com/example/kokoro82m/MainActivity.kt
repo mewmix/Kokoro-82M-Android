@@ -2,6 +2,7 @@ package com.example.kokoro82m
 
 import KokoroTheme
 import MixerScreen
+import com.example.kokoro82m.screens.MixerDemoScreen
 import com.example.kokoro82m.screens.BookScreen
 import com.example.kokoro82m.screens.CreationsScreen
 import ai.onnxruntime.OrtSession
@@ -172,6 +173,7 @@ private fun generateAudio(
 sealed class Screen(val title: String) {
     object Basic : Screen("Basic TTS")
     object Mixer : Screen("Voice style mixer")
+    object MixerDemo : Screen("Mixer Demo")
     object Book : Screen("Audio Book")
     object Creations : Screen("Creations")
     object About : Screen("About this app")
@@ -208,6 +210,12 @@ fun MainScreen(
                     onClick = { currentScreen = Screen.Mixer }
                 )
                 NavigationBarItem(
+                    icon = { Icon(Icons.Default.Info, contentDescription = "Demo") },
+                    label = { Text("Demo") },
+                    selected = currentScreen == Screen.MixerDemo,
+                    onClick = { currentScreen = Screen.MixerDemo }
+                )
+                NavigationBarItem(
                     icon = { Icon(Icons.Default.Info, contentDescription = "Book") },
                     label = { Text("Book") },
                     selected = currentScreen == Screen.Book,
@@ -237,6 +245,11 @@ fun MainScreen(
                     styleLoader = StyleLoader(
                         context = LocalContext.current
                     )
+                )
+                Screen.MixerDemo -> MixerDemoScreen(
+                    session = session,
+                    phonemeConverter = phonemeConverter,
+                    styleLoader = StyleLoader(LocalContext.current)
                 )
                 Screen.Book -> BookScreen(
                     session = session,
