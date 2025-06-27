@@ -2,7 +2,6 @@ package com.example.kokoro82m
 
 import KokoroTheme
 import MixerScreen
-import com.example.kokoro82m.screens.MixerDemoScreen
 import com.example.kokoro82m.screens.BookScreen
 import com.example.kokoro82m.screens.CreationsScreen
 import ai.onnxruntime.OrtSession
@@ -25,7 +24,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Button
@@ -172,7 +170,6 @@ private fun generateAudio(
 
 sealed class Screen(val title: String) {
     object Basic : Screen("Basic TTS")
-    object Mixer : Screen("Voice style mixer")
     object MixerDemo : Screen("Mixer Demo")
     object Book : Screen("Audio Book")
     object Creations : Screen("Creations")
@@ -204,12 +201,6 @@ fun MainScreen(
                     onClick = { currentScreen = Screen.Basic }
                 )
                 NavigationBarItem(
-                    icon = { Icon(Icons.Default.Build, contentDescription = "Mixer") },
-                    label = { Text("Mixer") },
-                    selected = currentScreen == Screen.Mixer,
-                    onClick = { currentScreen = Screen.Mixer }
-                )
-                NavigationBarItem(
                     icon = { Icon(Icons.Default.Info, contentDescription = "Demo") },
                     label = { Text("Demo") },
                     selected = currentScreen == Screen.MixerDemo,
@@ -239,14 +230,7 @@ fun MainScreen(
         Box(modifier = Modifier.padding(innerPadding)) {
             when (currentScreen) {
                 Screen.Basic -> BasicScreen(session = session, onGenerateAudio)
-                Screen.Mixer -> MixerScreen(
-                    session = session,
-                    phonemeConverter = phonemeConverter,
-                    styleLoader = StyleLoader(
-                        context = LocalContext.current
-                    )
-                )
-                Screen.MixerDemo -> MixerDemoScreen(
+                Screen.MixerDemo -> MixerScreen(
                     session = session,
                     phonemeConverter = phonemeConverter,
                     styleLoader = StyleLoader(LocalContext.current)

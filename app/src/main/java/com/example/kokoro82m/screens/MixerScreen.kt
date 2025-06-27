@@ -1,4 +1,5 @@
 import ai.onnxruntime.OrtSession
+import android.content.Context
 import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -33,6 +34,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,6 +47,7 @@ import com.example.kokoro82m.utils.InterpolationMode
 import com.example.kokoro82m.utils.createAudioFromStyleVector
 import com.example.kokoro82m.utils.mixStyles
 import com.example.kokoro82m.utils.playAudio
+import com.example.kokoro82m.utils.saveAudio
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -58,16 +61,19 @@ fun MixerScreen(
     styleLoader: StyleLoader,
 ) {
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
 
-    var selectedStyles by remember {
-        mutableStateOf(listOf("af_sarah", "am_adam", "af_bella"))
-    }
-    var weights by remember {
-        mutableStateOf(mapOf("af_sarah" to 0.5f, "am_adam" to 0.5f, "af_bella" to 0.25f))
-    }
-    var interpolationMode by remember {
-        mutableStateOf(InterpolationMode.LINEAR)
+    var selectedStyles by remember { mutableStateOf(listOf("af_sarah", "am_adam", "af_bella")) }
+    var weights by remember { mutableStateOf(mapOf("af_sarah" to 0.5f, "am_adam" to 0.5f, "af_bella" to 0.25f)) }
+    var interpolationMode by remember { mutableStateOf(InterpolationMode.LINEAR) }
+
+    LaunchedEffect(Unit) {
+        loadStyleConfig(context)?.let { (styles, w, mode) ->
+            selectedStyles = styles
+            weights = w
+            interpolationMode = mode
+        }
     }
 
     var text by remember { mutableStateOf("This is her warm heart, her warmest kokoro, unwavering love and comfort.") }
@@ -136,24 +142,29 @@ fun MixerScreen(
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Button(onClick = {
+                selectedStyles = listOf("af_sarah", "am_adam", "af_bella")
+                weights = mapOf("af_sarah" to 0.5f, "am_adam" to 0.5f, "af_bella" to 0.25f)
+            }) { Text("Reset") }
+
+            Button(onClick = { saveStyleConfig(context, selectedStyles, weights, interpolationMode) }) {
+                Text("Save Style")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth()
         ) {
             Button(
                 onClick = {
-                    selectedStyles = listOf("af_sarah", "am_adam", "af_bella")
-                    weights = mapOf("af_sarah" to 0.5f, "am_adam" to 0.5f, "af_bella" to 0.25f)
-                }
-            ) {
-                Text("Reset")
-            }
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            Button(
-                onClick = {
+                    shouldSaveFile = false
                     isProcessing = true
                     scope.launch {
-                        val mixedVector = com.example.kokoro82m.utils.mixStyles(
+                        val mixedVector = mixStyles(
                             styleLoader = styleLoader,
                             styles = selectedStyles,
                             weights = weights,
@@ -166,15 +177,54 @@ fun MixerScreen(
                             shouldSaveFile = shouldSaveFile,
                             session = session,
                             phonemeConverter = phonemeConverter,
-                            scope = scope
+                            scope = scope,
+                            context = context
                         ) {
                             isProcessing = false
                         }
                     }
                 },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
                 enabled = !isProcessing
             ) {
-                Text(if (isProcessing) "Mixing..." else "Apply Mix")
+                Text(if (isProcessing) "Mixing..." else "Play")
+            }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Button(
+                onClick = {
+                    shouldSaveFile = true
+                    isProcessing = true
+                    scope.launch {
+                        val mixedVector = mixStyles(
+                            styleLoader = styleLoader,
+                            styles = selectedStyles,
+                            weights = weights,
+                            mode = interpolationMode
+                        )
+                        generateAudio(
+                            text = text,
+                            style = mixedVector,
+                            speed = speed,
+                            shouldSaveFile = shouldSaveFile,
+                            session = session,
+                            phonemeConverter = phonemeConverter,
+                            scope = scope,
+                            context = context
+                        ) {
+                            isProcessing = false
+                        }
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                enabled = !isProcessing
+            ) {
+                Text(if (isProcessing) "Mixing..." else "Play & Save")
             }
         }
     }
@@ -188,6 +238,7 @@ fun generateAudio(
     session: OrtSession,
     phonemeConverter: PhonemeConverter,
     scope: CoroutineScope,
+    context: Context,
     onComplete: () -> Unit
 ) {
     scope.launch(Dispatchers.IO) {
@@ -199,6 +250,9 @@ fun generateAudio(
                 speed = speed,
                 session = session
             )
+            if (shouldSaveFile) {
+                saveAudio(audio, context)
+            }
             playAudio(audio, scope) {}
         } catch (e: Exception) {
             Log.e("Kokoro", "Error: ${e.message}")
@@ -208,6 +262,36 @@ fun generateAudio(
             }
         }
     }
+}
+
+private fun saveStyleConfig(
+    context: Context,
+    styles: List<String>,
+    weights: Map<String, Float>,
+    mode: InterpolationMode
+) {
+    val prefs = context.getSharedPreferences("mixer_config", Context.MODE_PRIVATE)
+    val styleString = styles.joinToString(",") { s -> "$s|${weights[s] ?: 1f}" }
+    prefs.edit()
+        .putString("styles", styleString)
+        .putString("mode", mode.name)
+        .apply()
+}
+
+private fun loadStyleConfig(context: Context): Triple<List<String>, Map<String, Float>, InterpolationMode>? {
+    val prefs = context.getSharedPreferences("mixer_config", Context.MODE_PRIVATE)
+    val saved = prefs.getString("styles", null) ?: return null
+    val mode = prefs.getString("mode", InterpolationMode.LINEAR.name) ?: InterpolationMode.LINEAR.name
+    val styles = mutableListOf<String>()
+    val weights = mutableMapOf<String, Float>()
+    saved.split(',').forEach { entry ->
+        val parts = entry.split('|')
+        if (parts.size == 2) {
+            styles.add(parts[0])
+            weights[parts[0]] = parts[1].toFloatOrNull() ?: 1f
+        }
+    }
+    return Triple(styles, weights, InterpolationMode.valueOf(mode))
 }
 
 
