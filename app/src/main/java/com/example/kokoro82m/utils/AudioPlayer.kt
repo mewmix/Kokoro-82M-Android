@@ -1,5 +1,6 @@
 package com.example.kokoro82m.utils
 
+import android.media.AudioAttributes
 import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.AudioTrack
@@ -20,13 +21,20 @@ class AudioPlayer {
         val channelConfig = AudioFormat.CHANNEL_OUT_MONO
         val audioFormat = AudioFormat.ENCODING_PCM_16BIT
         val bufferSize = AudioTrack.getMinBufferSize(sampleRate, channelConfig, audioFormat)
+        val attributes = AudioAttributes.Builder()
+            .setUsage(AudioAttributes.USAGE_MEDIA)
+            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+            .build()
         audioTrack = AudioTrack(
-            AudioManager.STREAM_MUSIC,
-            sampleRate,
-            channelConfig,
-            audioFormat,
+            attributes,
+            AudioFormat.Builder()
+                .setEncoding(audioFormat)
+                .setSampleRate(sampleRate)
+                .setChannelMask(channelConfig)
+                .build(),
             bufferSize,
-            AudioTrack.MODE_STREAM
+            AudioTrack.MODE_STREAM,
+            AudioManager.AUDIO_SESSION_ID_GENERATE
         )
         val byteBuffer = ByteBuffer.allocate(audio.size * 2)
         byteBuffer.order(ByteOrder.LITTLE_ENDIAN)

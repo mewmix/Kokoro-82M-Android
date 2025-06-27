@@ -1,5 +1,4 @@
 import ai.onnxruntime.OrtSession
-import android.content.Context
 import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -42,14 +41,14 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.kokoro82m.utils.PhonemeConverter
 import com.example.kokoro82m.utils.StyleLoader
+import com.example.kokoro82m.utils.InterpolationMode
 import com.example.kokoro82m.utils.createAudioFromStyleVector
+import com.example.kokoro82m.utils.mixStyles
 import com.example.kokoro82m.utils.playAudio
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlin.math.pow
-import kotlin.math.sqrt
 
 
 @Composable
@@ -58,7 +57,6 @@ fun MixerScreen(
     phonemeConverter: PhonemeConverter,
     styleLoader: StyleLoader,
 ) {
-    val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
 
@@ -155,12 +153,11 @@ fun MixerScreen(
                 onClick = {
                     isProcessing = true
                     scope.launch {
-                        val mixedVector = mixStyles(
+                        val mixedVector = com.example.kokoro82m.utils.mixStyles(
                             styleLoader = styleLoader,
                             styles = selectedStyles,
                             weights = weights,
-                            mode = interpolationMode,
-                            context = context
+                            mode = interpolationMode
                         )
                         generateAudio(
                             text = text,
@@ -214,54 +211,6 @@ fun generateAudio(
 }
 
 
-private suspend fun mixStyles(
-    styleLoader: StyleLoader,
-    styles: List<String>,
-    weights: Map<String, Float>,
-    mode: InterpolationMode,
-    context: Context
-): Array<FloatArray> = withContext(Dispatchers.Default) {
-    require(styles.isNotEmpty()) { "At least one style must be selected" }
-    require(styles.all { it in weights }) { "All styles must have weights" }
-
-
-    val styleVectors = styles.map { styleName ->
-        styleLoader.getStyleArray(styleName).first()
-    }
-
-
-    val totalWeight = weights.values.sum()
-    val normalizedWeights = weights.values.map { it / totalWeight }
-
-
-    when (mode) {
-        InterpolationMode.LINEAR -> linearInterpolation(styleVectors, normalizedWeights)
-        InterpolationMode.SPHERICAL -> sphericalInterpolation(styleVectors, normalizedWeights)
-    }
-}
-
-private fun linearInterpolation(vectors: List<FloatArray>, weights: List<Float>): Array<FloatArray> {
-    return arrayOf(
-        FloatArray(256) { i ->
-            vectors.mapIndexed { idx, vec -> vec[i] * weights[idx] }.sum()
-        }
-    )
-}
-
-private fun sphericalInterpolation(vectors: List<FloatArray>, weights: List<Float>): Array<FloatArray> {
-    val normalizedVectors = vectors.map { vec ->
-        val norm = sqrt(vec.sumOf { it.toDouble().pow(2) })
-        vec.map { (it / norm).toFloat() }.toFloatArray()
-    }
-
-    return arrayOf(
-        FloatArray(256) { i ->
-            normalizedVectors.mapIndexed { idx, vec ->
-                vec[i] * weights[idx]
-            }.sum()
-        }
-    )
-}
 
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
@@ -382,10 +331,6 @@ private fun InterpolationModeSelector(
     }
 }
 
-enum class InterpolationMode(val displayName: String) {
-    LINEAR("Linear (Better)"),
-    SPHERICAL("Spherical")
-}
 
 
 //@Preview(showBackground = true)
