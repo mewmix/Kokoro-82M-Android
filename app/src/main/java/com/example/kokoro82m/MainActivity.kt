@@ -2,6 +2,8 @@ package com.example.kokoro82m
 
 import KokoroTheme
 import MixerScreen
+import com.example.kokoro82m.screens.BookScreen
+import com.example.kokoro82m.screens.CreationsScreen
 import ai.onnxruntime.OrtSession
 import android.app.Application
 import android.content.Context
@@ -170,6 +172,8 @@ private fun generateAudio(
 sealed class Screen(val title: String) {
     object Basic : Screen("Basic TTS")
     object Mixer : Screen("Voice style mixer")
+    object Book : Screen("Audio Book")
+    object Creations : Screen("Creations")
     object About : Screen("About this app")
 }
 
@@ -204,6 +208,18 @@ fun MainScreen(
                     onClick = { currentScreen = Screen.Mixer }
                 )
                 NavigationBarItem(
+                    icon = { Icon(Icons.Default.Info, contentDescription = "Book") },
+                    label = { Text("Book") },
+                    selected = currentScreen == Screen.Book,
+                    onClick = { currentScreen = Screen.Book }
+                )
+                NavigationBarItem(
+                    icon = { Icon(Icons.Default.Info, contentDescription = "Creations") },
+                    label = { Text("Creations") },
+                    selected = currentScreen == Screen.Creations,
+                    onClick = { currentScreen = Screen.Creations }
+                )
+                NavigationBarItem(
                     icon = { Icon(Icons.Default.Info, contentDescription = "About") },
                     label = { Text("About") },
                     selected = currentScreen == Screen.About,
@@ -222,6 +238,11 @@ fun MainScreen(
                         context = LocalContext.current
                     )
                 )
+                Screen.Book -> BookScreen(
+                    session = session,
+                    phonemeConverter = phonemeConverter
+                )
+                Screen.Creations -> CreationsScreen()
                 Screen.About -> AboutScreen()
             }
         }

@@ -1,0 +1,73 @@
+package com.example.kokoro82m.utils
+
+import android.media.AudioFormat
+import android.media.AudioManager
+import android.media.AudioTrack
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
+
+class AudioPlayer {
+    private var audioTrack: AudioTrack? = null
+    private var pcmData: ByteArray? = null
+    private var position: Int = 0
+    private var isPaused: Boolean = false
+    private var isRunning: Boolean = false
+    private val sampleRate = 22050
+
+    fun prepare(audio: FloatArray) {
+        val channelConfig = AudioFormat.CHANNEL_OUT_MONO
+        val audioFormat = AudioFormat.ENCODING_PCM_16BIT
+        val bufferSize = AudioTrack.getMinBufferSize(sampleRate, channelConfig, audioFormat)
+        audioTrack = AudioTrack(
+            AudioManager.STREAM_MUSIC,
+            sampleRate,
+            channelConfig,
+            audioFormat,
+            bufferSize,
+            AudioTrack.MODE_STREAM
+        )
+        val byteBuffer = ByteBuffer.allocate(audio.size * 2)
+        byteBuffer.order(ByteOrder.LITTLE_ENDIAN)
+        val shortBuffer = byteBuffer.asShortBuffer()
+        for (s in audio) {
+            val pcmValue = (s * Short.MAX_VALUE).toInt().toShort()
+            shortBuffer.put(pcmValue)
+        }
+        pcmData = byteBuffer.array()
+        position = 0
+    }
+
+    suspend fun play() = withContext(Dispatchers.IO) {
+        val track = audioTrack ?: return@withContext
+        val data = pcmData ?: return@withContext
+        isRunning = true
+        track.play()
+        while (position < data.size) {
+            if (isPaused) {
+                withContext(Dispatchers.IO) { kotlinx.coroutines.delay(50) }
+                continue
+            }
+            val written = track.write(data, position, data.size - position)
+            if (written <= 0) break
+            position += written
+        }
+        track.stop()
+        track.release()
+        isRunning = false
+        position = 0
+    }
+
+    fun pause() {
+        isPaused = true
+        audioTrack?.pause()
+    }
+
+    fun resume() {
+        isPaused = false
+        audioTrack?.play()
+    }
+
+    fun isPlaying(): Boolean = isRunning && !isPaused
+}
