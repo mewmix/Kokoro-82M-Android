@@ -144,7 +144,6 @@ fun BookScreen(
                         audioPlayer.pause()
                         isPlaying = false
                     } else {
-                        audioPlayer.resume()
                         if (currentLine == -1 && lines.isNotEmpty()) {
                             try {
                                 debugMessage = null
@@ -166,6 +165,8 @@ fun BookScreen(
                             } catch (e: Exception) {
                                 debugMessage = e.localizedMessage
                             }
+                        } else {
+                            audioPlayer.resume()
                         }
                         isPlaying = true
                     }
