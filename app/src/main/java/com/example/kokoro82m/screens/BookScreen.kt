@@ -15,12 +15,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
@@ -98,61 +96,72 @@ fun BookScreen(
         }
     }
 
-    val scrollState = rememberScrollState()
-    Column(
+    val listState = rememberLazyListState()
+    LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
-            .verticalScroll(scrollState),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        state = listState
     ) {
-        StyleSelector(
-            styleNames = styleLoader.names,
-            selectedStyles = selectedStyles,
-            onAddStyle = { style ->
-                selectedStyles = selectedStyles + style
-                weights = weights + (style to 1f)
-            },
+        item {
+            StyleSelector(
+                styleNames = styleLoader.names,
+                selectedStyles = selectedStyles,
+                onAddStyle = { style ->
+                    selectedStyles = selectedStyles + style
+                    weights = weights + (style to 1f)
+                },
             onRemoveStyle = { style ->
                 selectedStyles = selectedStyles - style
                 weights = weights - style
             }
         )
 
-        WeightSliders(
-            selectedStyles = selectedStyles,
-            weights = weights,
-            onWeightChanged = { style, value ->
-                weights = weights.toMutableMap().apply { put(style, value) }
-            }
-        )
+        }
+        item {
+            WeightSliders(
+                selectedStyles = selectedStyles,
+                weights = weights,
+                onWeightChanged = { style, value ->
+                    weights = weights.toMutableMap().apply { put(style, value) }
+                }
+            )
+        }
 
-        InterpolationModeSelector(
-            currentMode = interpolationMode,
-            onModeSelected = { interpolationMode = it }
-        )
+        item {
+            InterpolationModeSelector(
+                currentMode = interpolationMode,
+                onModeSelected = { interpolationMode = it }
+            )
+        }
 
-        Text(
-            text = "Speed: $speed",
-            style = TextStyle(fontSize = responsiveTextSize(16.sp))
-        )
-        Slider(
-            value = speed,
-            onValueChange = {
-                speed = it
-                SettingsManager.setSpeed(context, it)
-            },
-            valueRange = 0.5f..2.0f,
-            steps = 5,
-            modifier = Modifier.fillMaxWidth()
-        )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Button(onClick = { launcher.launch(arrayOf("text/plain")) }) {
-                Text("Open File")
-            }
+        item {
+            Text(
+                text = "Speed: $speed",
+                style = TextStyle(fontSize = responsiveTextSize(16.sp))
+            )
+        }
+        item {
+            Slider(
+                value = speed,
+                onValueChange = {
+                    speed = it
+                    SettingsManager.setSpeed(context, it)
+                },
+                valueRange = 0.5f..2.0f,
+                steps = 5,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Button(onClick = { launcher.launch(arrayOf("text/plain")) }) {
+                    Text("Open File")
+                }
             Button(
                 onClick = {
                     if (isPlaying) {
@@ -223,30 +232,33 @@ fun BookScreen(
                 Text("Save")
             }
         }
+        }
 
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
-            itemsIndexed(lines) { index, line ->
+        itemsIndexed(lines) { index, line ->
+            Text(
+                text = line,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(if (index == currentLine) Color.Yellow else Color.Transparent)
+                    .padding(4.dp)
+            )
+        }
+
+        item {
+            debugMessage?.let {
                 Text(
-                    text = line,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(if (index == currentLine) Color.Yellow else Color.Transparent)
-                        .padding(4.dp)
+                    text = it,
+                    color = Color.Red,
+                    modifier = Modifier.padding(top = 8.dp)
                 )
             }
         }
 
-        debugMessage?.let {
-            Text(
-                text = it,
-                color = Color.Red,
-                modifier = Modifier.padding(top = 8.dp)
-            )
-        }
-
-        if (SettingsManager.isDebug(context)) {
-            val logs = DebugLogger.getLogs().joinToString("\n")
-            Text(logs, modifier = Modifier.padding(top = 8.dp))
+        item {
+            if (SettingsManager.isDebug(context)) {
+                val logs = DebugLogger.getLogs().joinToString("\n")
+                Text(logs, modifier = Modifier.padding(top = 8.dp))
+            }
         }
     }
 }
