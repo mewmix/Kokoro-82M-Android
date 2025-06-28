@@ -8,6 +8,8 @@ import android.net.Uri
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -29,10 +31,12 @@ import androidx.compose.ui.unit.sp
 fun Acknowledgements() {
     val context = LocalContext.current
 
+    val scrollState = rememberScrollState()
     Column(
         modifier = Modifier
             .padding(16.dp)
             .fillMaxWidth()
+            .verticalScroll(scrollState)
     ) {
         Text(
             text = "Thank You for Making This Happen!",

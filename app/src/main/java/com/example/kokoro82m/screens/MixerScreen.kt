@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
@@ -37,7 +39,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.kokoro82m.utils.InterpolationMode
 import com.example.kokoro82m.utils.PhonemeConverter
 import com.example.kokoro82m.utils.StyleLoader
@@ -47,6 +51,7 @@ import com.example.kokoro82m.utils.playAudio
 import com.example.kokoro82m.utils.saveAudio
 import com.example.kokoro82m.utils.SettingsManager
 import com.example.kokoro82m.utils.DebugLogger
+import com.example.kokoro82m.ui.responsiveTextSize
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -78,10 +83,12 @@ fun MixerScreen(
     var weights by remember { mutableStateOf(initial.second) }
     var interpolationMode by remember { mutableStateOf(initial.third) }
 
+    val scrollState = rememberScrollState()
     Column(
         modifier = Modifier
             .padding(16.dp)
-            .fillMaxSize(),
+            .fillMaxSize()
+            .verticalScroll(scrollState),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         TextField(
@@ -93,7 +100,10 @@ fun MixerScreen(
             modifier = Modifier.fillMaxWidth()
         )
 
-        Text("Speed: $speed")
+        Text(
+            text = "Speed: $speed",
+            style = TextStyle(fontSize = responsiveTextSize(16.sp))
+        )
         Slider(
             value = speed,
             onValueChange = {
@@ -137,7 +147,10 @@ fun MixerScreen(
             }
         )
 
-        Row(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
             Button(
                 onClick = {
                     shouldSaveFile = false
@@ -152,6 +165,30 @@ fun MixerScreen(
                 modifier = Modifier.weight(1f),
                 enabled = !isProcessing
             ) { Text(if (isProcessing) "Mixing..." else "Play") }
+
+            Button(
+                onClick = {
+                    shouldSaveFile = false
+                    isProcessing = true
+                    scope.launch {
+                        val mixed = mixStyles(styleLoader, selectedStyles, weights, interpolationMode)
+                        generateAudio(
+                            "This is a style preview",
+                            mixed,
+                            speed,
+                            shouldSaveFile,
+                            session,
+                            phonemeConverter,
+                            scope,
+                            context
+                        ) {
+                            isProcessing = false
+                        }
+                    }
+                },
+                modifier = Modifier.weight(1f),
+                enabled = !isProcessing
+            ) { Text(if (isProcessing) "Mixing..." else "Preview") }
 
             Button(
                 onClick = {
@@ -238,9 +275,7 @@ private fun saveStyleConfig(
         .apply()
 }
 
-@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class,
-    ExperimentalMaterial3Api::class
-)
+@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 private fun StyleSelector(
     styleNames: List<String>,
