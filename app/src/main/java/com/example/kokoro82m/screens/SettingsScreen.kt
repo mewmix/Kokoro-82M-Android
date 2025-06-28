@@ -14,6 +14,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.sp
+import com.example.kokoro82m.ui.responsiveTextSize
 import com.example.kokoro82m.utils.SettingsManager
 
 @Composable
@@ -21,7 +26,12 @@ fun SettingsScreen() {
     val context = LocalContext.current
     var debug by remember { mutableStateOf(SettingsManager.isDebug(context)) }
 
-    Column(modifier = Modifier.padding(16.dp)) {
+    val scrollState = rememberScrollState()
+    Column(
+        modifier = Modifier
+            .padding(16.dp)
+            .verticalScroll(scrollState)
+    ) {
         androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically) {
             Switch(
                 checked = debug,
@@ -30,7 +40,11 @@ fun SettingsScreen() {
                     SettingsManager.setDebug(context, it)
                 }
             )
-            Text(text = "Debug Mode", modifier = Modifier.padding(start = 8.dp))
+            Text(
+                text = "Debug Mode",
+                modifier = Modifier.padding(start = 8.dp),
+                style = TextStyle(fontSize = responsiveTextSize(16.sp))
+            )
         }
     }
 }
