@@ -11,6 +11,10 @@ plugins {
   kotlin("kapt")
 }
 
+kapt {
+  correctErrorTypes = true
+}
+
 android {
   namespace = "com.google.ai.edge.gallery"
   compileSdk = 35
@@ -78,6 +82,7 @@ dependencies {
   implementation(libs.mediapipe.tasks.genai)
   implementation(libs.mediapipe.tasks.imagegen)
   implementation("com.halilibo.compose-richtext:richtext-commonmark:0.16.0")
+  implementation(libs.onnxruntime.android)
   implementation(libs.tflite)
   implementation(libs.tflite.gpu)
   implementation(libs.tflite.support)

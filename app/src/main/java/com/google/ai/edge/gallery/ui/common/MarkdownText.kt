@@ -18,10 +18,10 @@ package com.google.ai.edge.gallery.ui.common
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.material3.Text
 import com.google.ai.edge.gallery.common.processLlmResponse
-import dev.jeziellago.compose.markdowntext.MarkdownText
 
 @Composable
 fun MarkdownText(content: String, modifier: Modifier = Modifier) {
-  MarkdownText(markdown = processLlmResponse(content), modifier = modifier)
+  Text(text = processLlmResponse(content), modifier = modifier)
 }

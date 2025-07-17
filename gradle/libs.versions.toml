@@ -34,6 +34,9 @@ protobuf = "4.26.1"
 # Hilt
 hilt = "2.51.1"
 
+# ONNX Runtime
+onnxruntime = "1.22.0"
+
 # Firebase
 firebaseBom = "32.8.1"
 
@@ -136,6 +139,7 @@ androidx-datastore = { group = "androidx.datastore", name = "datastore", version
 # Gson
 com-google-code-gson = { group = "com.google.code.gson", name = "gson", version.ref = "comGoogleCodeGson" }
 androidx-lifecycle-process = { group = "androidx.lifecycle", name = "lifecycle-process", version.ref = "lifecycleProcess" }
+onnxruntime-android = { group = "com.microsoft.onnxruntime", name = "onnxruntime-android", version.ref = "onnxruntime" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
