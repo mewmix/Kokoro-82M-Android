@@ -1,31 +1,33 @@
 pluginManagement {
-    repositories {
-        google {
-            content {
-                includeGroupByRegex("com\\.android.*")
-                includeGroupByRegex("com\\.google.*")
-                includeGroupByRegex("androidx.*")
-            }
-        }
-        mavenCentral()
-        mavenLocal()
-        maven {
-            url = uri("https://jitpack.io")
-        }
-        gradlePluginPortal()
+  repositories {
+    google {
+      content {
+        includeGroupByRegex("com.android.*")
+        includeGroupByRegex("com.google.*")
+        includeGroupByRegex("androidx..*")
+      }
     }
-}
-dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-    repositories {
-        google()
-        mavenCentral()
-        mavenLocal()
-        maven {
-            url = uri("https://jitpack.io")
-        }
+    mavenCentral()
+    gradlePluginPortal()
+  }
+  resolutionStrategy {
+    eachPlugin {
+      if (requested.id.id == "com.google.android.gms.oss-licenses-plugin") {
+        useModule("com.google.android.gms:oss-licenses-plugin:0.10.6")
+      }
     }
+  }
 }
 
-rootProject.name = "kokoro82m"
+dependencyResolutionManagement {
+  repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+  repositories {
+    //        mavenLocal()
+    google()
+    mavenCentral()
+  }
+}
+
+rootProject.name = "AI Edge Gallery"
+
 include(":app")

@@ -1,81 +1,104 @@
 plugins {
-    alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.compose)
+  alias(libs.plugins.android.application)
+  // Note: set apply to true to enable google-services (requires google-services.json).
+  alias(libs.plugins.google.services) apply false
+  alias(libs.plugins.kotlin.android)
+  alias(libs.plugins.kotlin.compose)
+  alias(libs.plugins.kotlin.serialization)
+  alias(libs.plugins.protobuf)
+  alias(libs.plugins.hilt.application)
+  alias(libs.plugins.oss.licenses)
+  kotlin("kapt")
 }
 
 android {
-    namespace = "com.example.kokoro82m"
-    compileSdk = 35
+  namespace = "com.google.ai.edge.gallery"
+  compileSdk = 35
 
-    defaultConfig {
-        applicationId = "com.example.kokoro82m"
-        minSdk = 29
-        targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+  defaultConfig {
+    applicationId = "com.google.aiedge.gallery"
+    minSdk = 31
+    targetSdk = 35
+    versionCode = 1
+    versionName = "1.0.4"
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    // Needed for HuggingFace auth workflows.
+    // Use the scheme of the "Redirect URLs" in HuggingFace app.
+    manifestPlaceholders["appAuthRedirectScheme"] =
+        "REPLACE_WITH_YOUR_REDIRECT_SCHEME_IN_HUGGINGFACE_APP"
 
-        ndk {
-            abiFilters.add("arm64-v8a")
-        }
-    }
+    testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+  }
 
-    buildTypes {
-        release {
-            isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
-        }
+  buildTypes {
+    release {
+      isMinifyEnabled = false
+      proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+      signingConfig = signingConfigs.getByName("debug")
     }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
-    }
-    kotlinOptions {
-        jvmTarget = "11"
-    }
-    buildFeatures {
-        compose = true
-    }
+  }
+  compileOptions {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+  }
+  kotlinOptions {
+    jvmTarget = "11"
+    freeCompilerArgs += "-Xcontext-receivers"
+  }
+  buildFeatures {
+    compose = true
+    buildConfig = true
+  }
 }
 
 dependencies {
-
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation(libs.androidx.activity.compose)
-    implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.androidx.ui)
-    implementation(libs.androidx.ui.graphics)
-    implementation(libs.androidx.ui.tooling.preview)
-    implementation(libs.androidx.material3)
-    implementation(libs.material)
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation(libs.androidx.ui.test.junit4)
-    debugImplementation(libs.androidx.ui.tooling)
-    debugImplementation(libs.androidx.ui.test.manifest)
-
-    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.20.0")
-    implementation("org.jetbrains.bio:npy:0.3.5")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.1")
-    implementation(libs.material3)
-    implementation("com.github.medavox:IPA-Transcribers:v0.2")
-
-    val lifecycle_version = "2.8.7"
-    val arch_version = "2.2.0"
-
-    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycle_version")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:$lifecycle_version")
+  implementation(libs.androidx.core.ktx)
+  implementation(libs.androidx.lifecycle.runtime.ktx)
+  implementation(libs.androidx.activity.compose)
+  implementation(platform(libs.androidx.compose.bom))
+  implementation(libs.androidx.ui)
+  implementation(libs.androidx.ui.graphics)
+  implementation(libs.androidx.ui.tooling.preview)
+  implementation(libs.androidx.material3)
+  implementation(libs.androidx.compose.navigation)
+  implementation(libs.kotlinx.serialization.json)
+  implementation(libs.material.icon.extended)
+  implementation(libs.androidx.work.runtime)
+  implementation(libs.androidx.datastore)
+  implementation(libs.com.google.code.gson)
+  implementation(libs.androidx.lifecycle.process)
+  implementation(libs.mediapipe.tasks.text)
+  implementation(libs.mediapipe.tasks.genai)
+  implementation(libs.mediapipe.tasks.imagegen)
+  implementation(libs.commonmark)
+  implementation(libs.richtext)
+  implementation(libs.tflite)
+  implementation(libs.tflite.gpu)
+  implementation(libs.tflite.support)
+  implementation(libs.camerax.core)
+  implementation(libs.camerax.camera2)
+  implementation(libs.camerax.lifecycle)
+  implementation(libs.camerax.view)
+  implementation(libs.openid.appauth)
+  implementation(libs.androidx.splashscreen)
+  implementation(libs.protobuf.javalite)
+  implementation(libs.hilt.android)
+  implementation(libs.hilt.navigation.compose)
+  implementation(libs.play.services.oss.licenses)
+  implementation(platform(libs.firebase.bom))
+  implementation(libs.firebase.analytics)
+  kapt(libs.hilt.android.compiler)
+  testImplementation(libs.junit)
+  androidTestImplementation(libs.androidx.junit)
+  androidTestImplementation(libs.androidx.espresso.core)
+  androidTestImplementation(platform(libs.androidx.compose.bom))
+  androidTestImplementation(libs.androidx.ui.test.junit4)
+  androidTestImplementation(libs.hilt.android.testing)
+  debugImplementation(libs.androidx.ui.tooling)
+  debugImplementation(libs.androidx.ui.test.manifest)
 }
 
-tasks.withType<JavaCompile> {
-    options.encoding = "UTF-8"
+protobuf {
+  protoc { artifact = "com.google.protobuf:protoc:4.26.1" }
+  generateProtoTasks { all().forEach { it.plugins { create("java") { option("lite") } } } }
 }
