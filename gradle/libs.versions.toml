@@ -9,9 +9,9 @@ activityCompose = "1.8.0"
 composeBom = "2024.04.00"
 
 # MediaPipe
-mediapipeTasksText = "0.1.16"
-mediapipeTasksGenai = "0.1.16"
-mediapipeTasksImagegen = "0.1.16"
+mediapipeTasksText = "0.10.15"
+mediapipeTasksGenai = "0.10.15"
+mediapipeTasksImagegen = "0.10.15"
 
 # Markdown
 commonmark = "0.21.0"
@@ -58,9 +58,11 @@ androidxDatastore = "1.0.0"
 
 # Gson
 comGoogleCodeGson = "2.10.1"
+kotlin-stdlib-jdk7 = "2.1.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+kotlin-stdlib-jdk7 = { group = "org.jetbrains.kotlin", name = "kotlin-stdlib-jdk7", version.ref = "kotlin-stdlib-jdk7" }
 androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
 androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
@@ -76,7 +78,7 @@ androidx-compose-navigation = { group = "androidx.navigation", name = "navigatio
 # MediaPipe
 mediapipe-tasks-text = { group = "com.google.mediapipe", name = "tasks-text", version.ref = "mediapipeTasksText" }
 mediapipe-tasks-genai = { group = "com.google.mediapipe", name = "tasks-genai", version.ref = "mediapipeTasksGenai" }
-mediapipe-tasks-imagegen = { group = "com.google.mediapipe", name = "tasks-imagegen", version.ref = "mediapipeTasksImagegen" }
+mediapipe-tasks-imagegen = { group = "com.google.mediapipe", name = "tasks-vision-image-generator", version = "0.10.14" }
 
 # Markdown
 commonmark = { group = "org.commonmark", name = "commonmark", version.ref = "commonmark" }

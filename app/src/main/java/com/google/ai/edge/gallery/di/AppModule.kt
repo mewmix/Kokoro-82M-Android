@@ -22,17 +22,32 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Singleton
+import android.content.Context
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 
 @InstallIn(SingletonComponent::class)
 @Module
 object AppModule {
   @Provides
-  fun provideDownloadRepository(downloadRepository: DownloadRepository): DownloadRepository {
-    return downloadRepository
+  @Singleton
+  fun provideDownloadRepository(
+    @ApplicationContext context: Context,
+    externalScope: CoroutineScope,
+    dispatcher: CoroutineDispatcher,
+  ): DownloadRepository {
+    return DownloadRepository(context, externalScope, dispatcher)
   }
 
   @Provides
-  fun provideDataStoreRepository(dataStoreRepository: DataStoreRepository): DataStoreRepository {
-    return dataStoreRepository
-  }
+  @Singleton
+  fun provideExternalScope(): CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+  @Provides
+  @Singleton
+  fun provideDispatcher(): CoroutineDispatcher = Dispatchers.Default
 }

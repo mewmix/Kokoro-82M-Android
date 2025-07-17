@@ -34,7 +34,6 @@ android {
     release {
       isMinifyEnabled = false
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-      signingConfig = signingConfigs.getByName("debug")
     }
   }
   compileOptions {
@@ -44,15 +43,22 @@ android {
   kotlinOptions {
     jvmTarget = "11"
     freeCompilerArgs += "-Xcontext-receivers"
-  }
+    // Explicitly set Compose compiler extension version for compatibility
+    freeCompilerArgs += "-P"
+    freeCompilerArgs += "plugin:androidx.compose.compiler.plugins.kotlin:metricsDestination=" + buildDir.absolutePath + "/compose_metrics"
+    freeCompilerArgs += "-P"
+    freeCompilerArgs += "plugin:androidx.compose.compiler.plugins.kotlin:reportsDestination=" + buildDir.absolutePath + "/compose_reports"
+    }
   buildFeatures {
     compose = true
+    
     buildConfig = true
   }
 }
 
 dependencies {
   implementation(libs.androidx.core.ktx)
+  implementation(libs.kotlin.stdlib.jdk7)
   implementation(libs.androidx.lifecycle.runtime.ktx)
   implementation(libs.androidx.activity.compose)
   implementation(platform(libs.androidx.compose.bom))
@@ -67,11 +73,11 @@ dependencies {
   implementation(libs.androidx.datastore)
   implementation(libs.com.google.code.gson)
   implementation(libs.androidx.lifecycle.process)
+  implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
   implementation(libs.mediapipe.tasks.text)
   implementation(libs.mediapipe.tasks.genai)
   implementation(libs.mediapipe.tasks.imagegen)
-  implementation(libs.commonmark)
-  implementation(libs.richtext)
+  implementation("com.halilibo.compose-richtext:richtext-commonmark:0.16.0")
   implementation(libs.tflite)
   implementation(libs.tflite.gpu)
   implementation(libs.tflite.support)
@@ -96,9 +102,19 @@ dependencies {
   androidTestImplementation(libs.hilt.android.testing)
   debugImplementation(libs.androidx.ui.tooling)
   debugImplementation(libs.androidx.ui.test.manifest)
+  kapt("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
 }
 
 protobuf {
   protoc { artifact = "com.google.protobuf:protoc:4.26.1" }
-  generateProtoTasks { all().forEach { it.plugins { create("java") { option("lite") } } } }
+  generateProtoTasks {
+    all().forEach { task ->
+      task.plugins.create("java") {
+        option("lite")
+      }
+    }
+  }
+  // In addition to the default 'main' sourceSet, specify a sourceSet for the proto files
+  // that are part of the project.
+  
 }

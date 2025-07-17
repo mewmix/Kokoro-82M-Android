@@ -26,7 +26,7 @@ enum class Screen(val route: String, val title: String, val shouldShowBottomBar:
   ImageGen("image_gen", "Image Gen", false),
   ImageClassification("image_classification", "Image Classification", false),
   ObjectDetection("object_detection", "Object Detection", false),
-  AudioClassification("audio_classification",n                      "Audio Classification",
+  AudioClassification("audio_classification",                      "Audio Classification",
                       false),
   TextSummarization("text_summarization", "Text Summarization", false),
   TextEmbedding("text_embedding", "Text Embedding", false),
