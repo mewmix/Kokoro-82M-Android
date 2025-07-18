@@ -5,23 +5,30 @@ import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.AudioTrack
 import com.example.kokoro82m.utils.DebugLogger
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.launch
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
-/** Lightweight audio player with optional debug logging. */
-
-class AudioPlayer {
+class AudioPlayer(
+    private val scope: CoroutineScope,
+    private val onStateChanged: (PlayerState) -> Unit
+) {
     private var audioTrack: AudioTrack? = null
     private var pcmData: ByteArray? = null
     private var position: Int = 0
-    private var isPaused: Boolean = false
-    private var isRunning: Boolean = false
+    private var currentState: PlayerState = PlayerState.IDLE
+        set(value) {
+            field = value
+            onStateChanged(value)
+        }
+
     private val sampleRate = 22050
 
     fun prepare(audio: FloatArray) {
         DebugLogger.log("AudioPlayer prepare length=${audio.size}")
+        release() // Release any existing track
         val channelConfig = AudioFormat.CHANNEL_OUT_MONO
         val audioFormat = AudioFormat.ENCODING_PCM_16BIT
         val bufferSize = AudioTrack.getMinBufferSize(sampleRate, channelConfig, audioFormat)
@@ -51,39 +58,61 @@ class AudioPlayer {
         position = 0
     }
 
-    suspend fun play() = withContext(Dispatchers.IO) {
-        val track = audioTrack ?: return@withContext
-        val data = pcmData ?: return@withContext
-        DebugLogger.log("AudioPlayer start play")
-        isRunning = true
-        track.play()
-        while (position < data.size) {
-            if (isPaused) {
-                withContext(Dispatchers.IO) { kotlinx.coroutines.delay(50) }
-                continue
-            }
-            val written = track.write(data, position, data.size - position)
-            if (written <= 0) break
-            position += written
+    fun play() {
+        val track = audioTrack ?: return
+        val data = pcmData ?: return
+
+        if (currentState == PlayerState.PAUSED) {
+            resume()
+            return
         }
-        track.stop()
-        track.release()
-        DebugLogger.log("AudioPlayer finished play")
-        isRunning = false
-        position = 0
+
+        scope.launch(Dispatchers.IO) {
+            DebugLogger.log("AudioPlayer start play")
+            currentState = PlayerState.PLAYING
+            track.play()
+            while (position < data.size && currentState == PlayerState.PLAYING) {
+                val written = track.write(data, position, data.size - position)
+                if (written <= 0) break
+                position += written
+            }
+            if (currentState != PlayerState.PAUSED) {
+                stop()
+            }
+        }
     }
 
     fun pause() {
-        DebugLogger.log("AudioPlayer pause")
-        isPaused = true
+        if (currentState == PlayerState.PLAYING) {
+            audioTrack?.pause()
+            currentState = PlayerState.PAUSED
+            DebugLogger.log("AudioPlayer pause")
+        }
+    }
+
+    private fun resume() {
+        if (currentState == PlayerState.PAUSED) {
+            audioTrack?.play()
+            currentState = PlayerState.PLAYING
+            DebugLogger.log("AudioPlayer resume")
+        }
+    }
+
+    fun stop() {
+        if (currentState != PlayerState.IDLE) {
+            DebugLogger.log("AudioPlayer stop")
+            currentState = PlayerState.IDLE
+            release()
+        }
+    }
+
+    private fun release() {
         audioTrack?.pause()
+        audioTrack?.flush()
+        audioTrack?.release()
+        audioTrack = null
+        position = 0
     }
 
-    fun resume() {
-        DebugLogger.log("AudioPlayer resume")
-        isPaused = false
-        audioTrack?.play()
-    }
-
-    fun isPlaying(): Boolean = isRunning && !isPaused
+    fun isPlaying(): Boolean = currentState == PlayerState.PLAYING
 }

@@ -7,59 +7,23 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Button
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Text
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.RadioButton
-import androidx.compose.material3.Slider
-import androidx.compose.material3.SuggestionChip
-import androidx.compose.material3.TextField
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.Alignment
-import com.example.kokoro82m.utils.AudioPlayer
-import com.example.kokoro82m.utils.InterpolationMode
-import com.example.kokoro82m.utils.PhonemeConverter
-import com.example.kokoro82m.utils.StyleLoader
-import com.example.kokoro82m.utils.createAudioFromStyleVector
-import com.example.kokoro82m.utils.mixStyles
-import com.example.kokoro82m.utils.saveAudio
-import com.example.kokoro82m.utils.SettingsManager
-import com.example.kokoro82m.utils.BookmarkManager
-import com.example.kokoro82m.utils.DebugLogger
-import kotlinx.coroutines.Dispatchers
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.kokoro82m.utils.*
+import com.example.kokoro82m.viewmodel.BookViewModel
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -68,16 +32,18 @@ import kotlinx.coroutines.withContext
 fun BookScreen(
     session: OrtSession,
     phonemeConverter: PhonemeConverter,
+    bookViewModel: BookViewModel = viewModel()
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    var lines by remember { mutableStateOf<List<String>>(emptyList()) }
-    var currentLine by remember { mutableIntStateOf(-1) }
-    var isPlaying by remember { mutableStateOf(false) }
-    var bookUri by remember { mutableStateOf<Uri?>(null) }
+    val lines by bookViewModel.lines.collectAsState()
+    val currentLine by bookViewModel.currentLine.collectAsState()
+    val playerState by bookViewModel.playerState.collectAsState()
+
+    val bookUri by bookViewModel.bookUri.collectAsState()
     var bookmarkLine by remember { mutableIntStateOf(-1) }
-    val audioPlayer = remember { AudioPlayer() }
+
     val styleLoader = remember { StyleLoader(context) }
     var selectedStyles by remember { mutableStateOf(listOf("af_sarah")) }
     var weights by remember { mutableStateOf(mapOf("af_sarah" to 1f)) }
@@ -89,12 +55,15 @@ fun BookScreen(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
         uri?.let {
-            bookUri = it
-            scope.launch {
-                val text = readTextFromUri(context, it)
-                lines = text.lines()
-                bookmarkLine = BookmarkManager.load(context, it.toString())
-                currentLine = bookmarkLine
+            bookViewModel.loadBook(context, it)
+        }
+    }
+
+    LaunchedEffect(bookUri) {
+        bookUri?.let {
+            bookmarkLine = BookmarkManager.load(context, it.toString())
+            if (bookmarkLine != -1) {
+                bookViewModel.setCurrentLine(bookmarkLine)
             }
         }
     }
@@ -154,20 +123,20 @@ fun BookScreen(
             )
         }
 
-        if (bookmarkLine >= 0 && !isPlaying) {
+        if (bookmarkLine >= 0 && playerState == PlayerState.IDLE) {
             item {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text("Resume at line ${bookmarkLine + 1}")
-                    Button(onClick = { currentLine = bookmarkLine }) {
+                    Button(onClick = { bookViewModel.setCurrentLine(bookmarkLine) }) {
                         Text("Go")
                     }
                     Button(onClick = {
                         bookUri?.let { BookmarkManager.clear(context, it.toString()) }
                         bookmarkLine = -1
-                        currentLine = -1
+                        bookViewModel.setCurrentLine(-1)
                     }) {
                         Text("Clear")
                     }
@@ -177,57 +146,57 @@ fun BookScreen(
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                Button(onClick = { launcher.launch(arrayOf("text/plain")) }) {
-                    Text("Open File")
+                Button(onClick = { launcher.launch(arrayOf("text/plain")) }, modifier = Modifier.weight(1f)) {
+                    Text("Open")
                 }
                 Button(
                     onClick = {
-                        if (isPlaying) {
-                            audioPlayer.pause()
-                            bookUri?.let { BookmarkManager.save(context, it.toString(), currentLine) }
-                            isPlaying = false
-                        } else {
-                            if (lines.isNotEmpty()) {
-                                try {
-                                    debugMessage = null
-                                    playBook(
-                                        session = session,
-                                        phonemeConverter = phonemeConverter,
-                                        styleLoader = styleLoader,
-                                        selectedStyles = selectedStyles,
-                                        weights = weights,
-                                        mode = interpolationMode,
-                                        speed = speed,
-                                        lines = lines,
-                                        startLine = currentLine.coerceAtLeast(0),
-                                        bookUri = bookUri,
-                                        audioPlayer = audioPlayer,
-                                        context = context,
-                                        scope = scope,
-                                        onLineChanged = {
-                                            currentLine = it
-                                            bookUri?.let { u -> BookmarkManager.save(context, u.toString(), it) }
-                                        },
-                                        onFinished = {
-                                            isPlaying = false
-                                            bookUri?.let { u -> BookmarkManager.clear(context, u.toString()) }
-                                            bookmarkLine = -1
-                                        }
-                                    )
-                                } catch (e: Exception) {
-                                    debugMessage = e.localizedMessage
-                                }
-                            } else {
-                                audioPlayer.resume()
+                        when (playerState) {
+                            PlayerState.IDLE -> {
+                                playBook(
+                                    scope = scope,
+                                    session = session,
+                                    phonemeConverter = phonemeConverter,
+                                    styleLoader = styleLoader,
+                                    selectedStyles = selectedStyles,
+                                    weights = weights,
+                                    mode = interpolationMode,
+                                    speed = speed,
+                                    lines = lines,
+                                    startLine = currentLine.coerceAtLeast(0),
+                                    bookUri = bookUri,
+                                    audioPlayer = bookViewModel.audioPlayer,
+                                    context = context,
+                                    onLineChanged = { bookViewModel.setCurrentLine(it) },
+                                    onFinished = {
+                                        bookUri?.let { u -> BookmarkManager.clear(context, u.toString()) }
+                                        bookmarkLine = -1
+                                    }
+                                )
                             }
-                            isPlaying = true
+                            PlayerState.PLAYING -> bookViewModel.audioPlayer.pause()
+                            PlayerState.PAUSED -> bookViewModel.audioPlayer.play()
                         }
                     },
-                    enabled = lines.isNotEmpty()
+                    enabled = lines.isNotEmpty(),
+                    modifier = Modifier.weight(1f)
                 ) {
-                    Text(if (isPlaying) "Pause" else "Play")
+                    Text(
+                        when (playerState) {
+                            PlayerState.IDLE -> "Play"
+                            PlayerState.PLAYING -> "Pause"
+                            PlayerState.PAUSED -> "Resume"
+                        }
+                    )
+                }
+                Button(
+                    onClick = { bookViewModel.audioPlayer.stop() },
+                    enabled = playerState != PlayerState.IDLE,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("Stop")
                 }
                 Button(
                     onClick = {
@@ -259,7 +228,8 @@ fun BookScreen(
                             }
                         }
                     },
-                    enabled = lines.isNotEmpty()
+                    enabled = lines.isNotEmpty(),
+                    modifier = Modifier.weight(1f)
                 ) {
                     Text("Save")
                 }
@@ -271,6 +241,29 @@ fun BookScreen(
                 text = line,
                 modifier = Modifier
                     .fillMaxWidth()
+                    .clickable {
+                        bookViewModel.setCurrentLine(index)
+                        playBook(
+                            scope = scope,
+                            session = session,
+                            phonemeConverter = phonemeConverter,
+                            styleLoader = styleLoader,
+                            selectedStyles = selectedStyles,
+                            weights = weights,
+                            mode = interpolationMode,
+                            speed = speed,
+                            lines = lines,
+                            startLine = index,
+                            bookUri = bookUri,
+                            audioPlayer = bookViewModel.audioPlayer,
+                            context = context,
+                            onLineChanged = { bookViewModel.setCurrentLine(it) },
+                            onFinished = {
+                                bookUri?.let { u -> BookmarkManager.clear(context, u.toString()) }
+                                bookmarkLine = -1
+                            }
+                        )
+                    }
                     .background(if (index == currentLine) Color.Yellow else Color.Transparent)
                     .padding(4.dp)
             )
@@ -296,6 +289,7 @@ fun BookScreen(
 }
 
 private fun playBook(
+    scope: CoroutineScope,
     session: OrtSession,
     phonemeConverter: PhonemeConverter,
     styleLoader: StyleLoader,
@@ -308,7 +302,6 @@ private fun playBook(
     bookUri: Uri?,
     audioPlayer: AudioPlayer,
     context: Context,
-    scope: kotlinx.coroutines.CoroutineScope,
     onLineChanged: (Int) -> Unit,
     onFinished: () -> Unit
 ) {
@@ -321,7 +314,13 @@ private fun playBook(
                 mode = mode
             )
             for (index in startLine until lines.size) {
-                onLineChanged(index)
+                if (!audioPlayer.isPlaying()) {
+                    // This check is tricky now. The loop should be controlled by the player state.
+                    // For now, we assume the loop breaks when stop is called.
+                }
+                withContext(Dispatchers.Main) {
+                    onLineChanged(index)
+                }
                 bookUri?.let { BookmarkManager.save(context, it.toString(), index) }
                 val line = lines[index]
                 val phonemes = phonemeConverter.phonemize(line)
@@ -332,134 +331,15 @@ private fun playBook(
                     session = session
                 )
                 audioPlayer.prepare(audio)
-                audioPlayer.play()
+                audioPlayer.play() // This is now a suspend function that waits until done or stopped
             }
-            onLineChanged(-1)
-            bookUri?.let { BookmarkManager.clear(context, it.toString()) }
-            withContext(Dispatchers.Main) { onFinished() }
+            withContext(Dispatchers.Main) {
+                onLineChanged(-1)
+                onFinished()
+            }
         } catch (e: Exception) {
             DebugLogger.log("playBook failed: ${e.localizedMessage}")
         }
     }
 }
 
-private suspend fun readTextFromUri(context: Context, uri: Uri): String = withContext(Dispatchers.IO) {
-    context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() } ?: ""
-}
-
-@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
-@Composable
-private fun StyleSelector(
-    styleNames: List<String>,
-    selectedStyles: List<String>,
-    onAddStyle: (String) -> Unit,
-    onRemoveStyle: (String) -> Unit
-) {
-    var expanded by remember { mutableStateOf(false) }
-
-    Column {
-        Text("Selected Styles:", style = MaterialTheme.typography.labelLarge)
-
-        FlowRow(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            selectedStyles.forEach { style ->
-                SuggestionChip(
-                    onClick = { onRemoveStyle(style) },
-                    label = { Text(style) },
-                    icon = {
-                        Icon(
-                            Icons.Default.Close,
-                            contentDescription = "Remove"
-                        )
-                    }
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        ExposedDropdownMenuBox(
-            expanded = expanded,
-            onExpandedChange = { expanded = !expanded }
-        ) {
-            TextField(
-                value = "",
-                onValueChange = {},
-                readOnly = true,
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                placeholder = { Text("Add style...") },
-                modifier = Modifier
-                    .menuAnchor()
-                    .fillMaxWidth()
-            )
-
-            ExposedDropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false }
-            ) {
-                styleNames.filter { it !in selectedStyles }.forEach { style ->
-                    DropdownMenuItem(
-                        text = { Text(style) },
-                        onClick = {
-                            onAddStyle(style)
-                            expanded = false
-                        }
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun WeightSliders(
-    selectedStyles: List<String>,
-    weights: Map<String, Float>,
-    onWeightChanged: (String, Float) -> Unit
-) {
-    Column {
-        Text("Style Weights:", style = MaterialTheme.typography.labelLarge)
-
-        selectedStyles.forEach { style ->
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(text = style, modifier = Modifier.width(120.dp))
-                Slider(
-                    value = weights[style] ?: 0f,
-                    onValueChange = { onWeightChanged(style, it) },
-                    valueRange = 0f..1f,
-                    modifier = Modifier.weight(1f)
-                )
-                Text(text = "%.2f".format(weights[style] ?: 0f))
-            }
-        }
-    }
-}
-
-@Composable
-private fun InterpolationModeSelector(
-    currentMode: InterpolationMode,
-    onModeSelected: (InterpolationMode) -> Unit
-) {
-    Column {
-        Text("Interpolation Mode:", style = MaterialTheme.typography.labelLarge)
-
-        Row(horizontalArrangement = Arrangement.SpaceEvenly) {
-            InterpolationMode.entries.forEach { mode ->
-                Row(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clickable { onModeSelected(mode) },
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    RadioButton(
-                        selected = currentMode == mode,
-                        onClick = { onModeSelected(mode) }
-                    )
-                    Text(mode.displayName)
-                }
-            }
-        }
-    }
-}

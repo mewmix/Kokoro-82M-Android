@@ -246,7 +246,7 @@ private fun saveStyleConfig(
     ExperimentalMaterial3Api::class
 )
 @Composable
-private fun StyleSelector(
+fun StyleSelector(
     styleNames: List<String>,
     selectedStyles: List<String>,
     onAddStyle: (String) -> Unit,
@@ -311,7 +311,7 @@ private fun StyleSelector(
 }
 
 @Composable
-private fun WeightSliders(
+fun WeightSliders(
     selectedStyles: List<String>,
     weights: Map<String, Float>,
     onWeightChanged: (String, Float) -> Unit
@@ -335,7 +335,7 @@ private fun WeightSliders(
 }
 
 @Composable
-private fun InterpolationModeSelector(
+fun InterpolationModeSelector(
     currentMode: InterpolationMode,
     onModeSelected: (InterpolationMode) -> Unit
 ) {
