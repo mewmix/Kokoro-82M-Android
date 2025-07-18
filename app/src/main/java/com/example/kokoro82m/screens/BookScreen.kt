@@ -99,179 +99,196 @@ fun BookScreen(
         }
     }
 
-    Column(
+    LazyColumn(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        StyleSelector(
-            styleNames = styleLoader.names,
-            selectedStyles = selectedStyles,
-            onAddStyle = { style ->
-                selectedStyles = selectedStyles + style
-                weights = weights + (style to 1f)
-            },
-            onRemoveStyle = { style ->
-                selectedStyles = selectedStyles - style
-                weights = weights - style
-            }
-        )
+        item {
+            StyleSelector(
+                styleNames = styleLoader.names,
+                selectedStyles = selectedStyles,
+                onAddStyle = { style ->
+                    selectedStyles = selectedStyles + style
+                    weights = weights + (style to 1f)
+                },
+                onRemoveStyle = { style ->
+                    selectedStyles = selectedStyles - style
+                    weights = weights - style
+                }
+            )
+        }
 
-        WeightSliders(
-            selectedStyles = selectedStyles,
-            weights = weights,
-            onWeightChanged = { style, value ->
-                weights = weights.toMutableMap().apply { put(style, value) }
-            }
-        )
+        item {
+            WeightSliders(
+                selectedStyles = selectedStyles,
+                weights = weights,
+                onWeightChanged = { style, value ->
+                    weights = weights.toMutableMap().apply { put(style, value) }
+                }
+            )
+        }
 
-        InterpolationModeSelector(
-            currentMode = interpolationMode,
-            onModeSelected = { interpolationMode = it }
-        )
+        item {
+            InterpolationModeSelector(
+                currentMode = interpolationMode,
+                onModeSelected = { interpolationMode = it }
+            )
+        }
 
-        Text("Speed: $speed")
-        Slider(
-            value = speed,
-            onValueChange = {
-                speed = it
-                SettingsManager.setSpeed(context, it)
-            },
-            valueRange = 0.5f..2.0f,
-            steps = 5,
-            modifier = Modifier.fillMaxWidth()
-        )
+        item {
+            Text("Speed: $speed")
+        }
+
+        item {
+            Slider(
+                value = speed,
+                onValueChange = {
+                    speed = it
+                    SettingsManager.setSpeed(context, it)
+                },
+                valueRange = 0.5f..2.0f,
+                steps = 5,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
 
         if (bookmarkLine >= 0 && !isPlaying) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text("Resume at line ${bookmarkLine + 1}")
-                Button(onClick = { currentLine = bookmarkLine }) {
-                    Text("Go")
-                }
-                Button(onClick = {
-                    bookUri?.let { BookmarkManager.clear(context, it.toString()) }
-                    bookmarkLine = -1
-                    currentLine = -1
-                }) {
-                    Text("Clear")
+            item {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text("Resume at line ${bookmarkLine + 1}")
+                    Button(onClick = { currentLine = bookmarkLine }) {
+                        Text("Go")
+                    }
+                    Button(onClick = {
+                        bookUri?.let { BookmarkManager.clear(context, it.toString()) }
+                        bookmarkLine = -1
+                        currentLine = -1
+                    }) {
+                        Text("Clear")
+                    }
                 }
             }
         }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Button(onClick = { launcher.launch(arrayOf("text/plain")) }) {
-                Text("Open File")
-            }
-            Button(
-                onClick = {
-                    if (isPlaying) {
-                        audioPlayer.pause()
-                        bookUri?.let { BookmarkManager.save(context, it.toString(), currentLine) }
-                        isPlaying = false
-                    } else {
-                        if (lines.isNotEmpty()) {
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Button(onClick = { launcher.launch(arrayOf("text/plain")) }) {
+                    Text("Open File")
+                }
+                Button(
+                    onClick = {
+                        if (isPlaying) {
+                            audioPlayer.pause()
+                            bookUri?.let { BookmarkManager.save(context, it.toString(), currentLine) }
+                            isPlaying = false
+                        } else {
+                            if (lines.isNotEmpty()) {
+                                try {
+                                    debugMessage = null
+                                    playBook(
+                                        session = session,
+                                        phonemeConverter = phonemeConverter,
+                                        styleLoader = styleLoader,
+                                        selectedStyles = selectedStyles,
+                                        weights = weights,
+                                        mode = interpolationMode,
+                                        speed = speed,
+                                        lines = lines,
+                                        startLine = currentLine.coerceAtLeast(0),
+                                        bookUri = bookUri,
+                                        audioPlayer = audioPlayer,
+                                        context = context,
+                                        scope = scope,
+                                        onLineChanged = {
+                                            currentLine = it
+                                            bookUri?.let { u -> BookmarkManager.save(context, u.toString(), it) }
+                                        },
+                                        onFinished = {
+                                            isPlaying = false
+                                            bookUri?.let { u -> BookmarkManager.clear(context, u.toString()) }
+                                            bookmarkLine = -1
+                                        }
+                                    )
+                                } catch (e: Exception) {
+                                    debugMessage = e.localizedMessage
+                                }
+                            } else {
+                                audioPlayer.resume()
+                            }
+                            isPlaying = true
+                        }
+                    },
+                    enabled = lines.isNotEmpty()
+                ) {
+                    Text(if (isPlaying) "Pause" else "Play")
+                }
+                Button(
+                    onClick = {
+                        scope.launch {
                             try {
                                 debugMessage = null
-                                playBook(
-                                    session = session,
-                                    phonemeConverter = phonemeConverter,
+                                val mixedVector = mixStyles(
                                     styleLoader = styleLoader,
-                                    selectedStyles = selectedStyles,
+                                    styles = selectedStyles,
                                     weights = weights,
-                                    mode = interpolationMode,
-                                    speed = speed,
-                                    lines = lines,
-                                    startLine = currentLine.coerceAtLeast(0),
-                                    bookUri = bookUri,
-                                    audioPlayer = audioPlayer,
-                                    context = context,
-                                    scope = scope,
-                                    onLineChanged = {
-                                        currentLine = it
-                                        bookUri?.let { u -> BookmarkManager.save(context, u.toString(), it) }
-                                    },
-                                    onFinished = {
-                                        isPlaying = false
-                                        bookUri?.let { u -> BookmarkManager.clear(context, u.toString()) }
-                                        bookmarkLine = -1
-                                    }
+                                    mode = interpolationMode
                                 )
+                                val audioData = mutableListOf<Float>()
+                                for (line in lines) {
+                                    val phonemes = phonemeConverter.phonemize(line)
+                                    val (audio, _) = createAudioFromStyleVector(
+                                        phonemes = phonemes,
+                                        voice = mixedVector,
+                                        speed = speed,
+                                        session = session
+                                    )
+                                    audioData.addAll(audio.toList())
+                                }
+                                saveAudio(audioData.toFloatArray(), context)
                             } catch (e: Exception) {
                                 debugMessage = e.localizedMessage
                             }
-                        } else {
-                            audioPlayer.resume()
                         }
-                        isPlaying = true
-                    }
-                },
-                enabled = lines.isNotEmpty()
-            ) {
-                Text(if (isPlaying) "Pause" else "Play")
-            }
-            Button(
-                onClick = {
-                    scope.launch {
-                        try {
-                            debugMessage = null
-                            val mixedVector = mixStyles(
-                                styleLoader = styleLoader,
-                                styles = selectedStyles,
-                                weights = weights,
-                                mode = interpolationMode
-                            )
-                            val audioData = mutableListOf<Float>()
-                            for (line in lines) {
-                                val phonemes = phonemeConverter.phonemize(line)
-                                val (audio, _) = createAudioFromStyleVector(
-                                    phonemes = phonemes,
-                                    voice = mixedVector,
-                                    speed = speed,
-                                    session = session
-                                )
-                                audioData.addAll(audio.toList())
-                            }
-                            saveAudio(audioData.toFloatArray(), context)
-                        } catch (e: Exception) {
-                            debugMessage = e.localizedMessage
-                        }
-                    }
-                },
-                enabled = lines.isNotEmpty()
-            ) {
-                Text("Save")
+                    },
+                    enabled = lines.isNotEmpty()
+                ) {
+                    Text("Save")
+                }
             }
         }
 
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
-            itemsIndexed(lines) { index, line ->
+        itemsIndexed(lines) { index, line ->
+            Text(
+                text = line,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(if (index == currentLine) Color.Yellow else Color.Transparent)
+                    .padding(4.dp)
+            )
+        }
+
+        item {
+            debugMessage?.let {
                 Text(
-                    text = line,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(if (index == currentLine) Color.Yellow else Color.Transparent)
-                        .padding(4.dp)
+                    text = it,
+                    color = Color.Red,
+                    modifier = Modifier.padding(top = 8.dp)
                 )
             }
         }
 
-        debugMessage?.let {
-            Text(
-                text = it,
-                color = Color.Red,
-                modifier = Modifier.padding(top = 8.dp)
-            )
-        }
-
-        if (SettingsManager.isDebug(context)) {
-            val logs = DebugLogger.getLogs().joinToString("\n")
-            Text(logs, modifier = Modifier.padding(top = 8.dp))
+        item {
+            if (SettingsManager.isDebug(context)) {
+                val logs = DebugLogger.getLogs().joinToString("\n")
+                Text(logs, modifier = Modifier.padding(top = 8.dp))
+            }
         }
     }
 }
