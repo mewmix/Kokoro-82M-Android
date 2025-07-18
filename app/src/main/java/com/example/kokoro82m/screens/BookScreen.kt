@@ -24,6 +24,7 @@ import com.example.kokoro82m.utils.*
 import com.example.kokoro82m.viewmodel.BookViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -43,6 +44,8 @@ fun BookScreen(
 
     val bookUri by bookViewModel.bookUri.collectAsState()
     var bookmarkLine by remember { mutableIntStateOf(-1) }
+
+    var playJob by remember { mutableStateOf<Job?>(null) }
 
     val styleLoader = remember { StyleLoader(context) }
     var selectedStyles by remember { mutableStateOf(listOf("af_sarah")) }
@@ -153,9 +156,14 @@ fun BookScreen(
                 }
                 Button(
                     onClick = {
-                        when (playerState) {
-                            PlayerState.IDLE -> {
-                                playBook(
+                        if (playerState == PlayerState.PLAYING) {
+                            bookViewModel.audioPlayer.pause()
+                            playJob?.cancel()
+                        } else {
+                            if (playerState == PlayerState.PAUSED) {
+                                bookViewModel.audioPlayer.play()
+                            } else {
+                                playJob = playBook(
                                     scope = scope,
                                     session = session,
                                     phonemeConverter = phonemeConverter,
@@ -176,8 +184,6 @@ fun BookScreen(
                                     }
                                 )
                             }
-                            PlayerState.PLAYING -> bookViewModel.audioPlayer.pause()
-                            PlayerState.PAUSED -> bookViewModel.audioPlayer.play()
                         }
                     },
                     enabled = lines.isNotEmpty(),
@@ -243,7 +249,7 @@ fun BookScreen(
                     .fillMaxWidth()
                     .clickable {
                         bookViewModel.setCurrentLine(index)
-                        playBook(
+                        playJob = playBook(
                             scope = scope,
                             session = session,
                             phonemeConverter = phonemeConverter,
@@ -304,8 +310,8 @@ private fun playBook(
     context: Context,
     onLineChanged: (Int) -> Unit,
     onFinished: () -> Unit
-) {
-    scope.launch(Dispatchers.IO) {
+): Job {
+    return scope.launch(Dispatchers.IO) {
         try {
             val mixedVector = mixStyles(
                 styleLoader = styleLoader,
