@@ -5,6 +5,7 @@ import com.example.kokoro82m.screens.BookScreen
 import com.example.kokoro82m.screens.CreationsScreen
 import com.example.kokoro82m.screens.SettingsScreen
 import com.example.kokoro82m.screens.MixerScreen
+import com.example.kokoro82m.screens.MoreScreen
 import ai.onnxruntime.OrtSession
 import android.app.Application
 import android.content.Context
@@ -26,6 +27,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -82,6 +84,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        DebugLogger.initialize(this)
         enableEdgeToEdge()
 
         setContent {
@@ -172,6 +175,7 @@ sealed class Screen(val title: String) {
     object Basic : Screen("Basic TTS")
     object Mixer : Screen("Mixer")
     object Book : Screen("Audio Book")
+    object More : Screen("More")
     object Creations : Screen("Creations")
     object Settings : Screen("Settings")
     object About : Screen("About this app")
@@ -214,22 +218,16 @@ fun MainScreen(
                     onClick = { currentScreen = Screen.Book }
                 )
                 NavigationBarItem(
-                    icon = { Icon(Icons.Default.Info, contentDescription = "Creations") },
-                    label = { Text("Creations") },
-                    selected = currentScreen == Screen.Creations,
-                    onClick = { currentScreen = Screen.Creations }
-                )
-                NavigationBarItem(
-                    icon = { Icon(Icons.Default.Info, contentDescription = "Settings") },
-                    label = { Text("Settings") },
-                    selected = currentScreen == Screen.Settings,
-                    onClick = { currentScreen = Screen.Settings }
-                )
-                NavigationBarItem(
                     icon = { Icon(Icons.Default.Info, contentDescription = "About") },
                     label = { Text("About") },
                     selected = currentScreen == Screen.About,
                     onClick = { currentScreen = Screen.About }
+                )
+                 NavigationBarItem(
+                    icon = { Icon(Icons.Default.MoreHoriz, contentDescription = "More") },
+                    label = { Text("More") },
+                    selected = currentScreen == Screen.More,
+                    onClick = { currentScreen = Screen.More }
                 )
             }
         }
@@ -246,6 +244,13 @@ fun MainScreen(
                     session = session,
                     phonemeConverter = phonemeConverter
                 )
+                Screen.More -> MoreScreen { screen ->
+                    currentScreen = when (screen) {
+                        "Creations" -> Screen.Creations
+                        "Settings" -> Screen.Settings
+                        else -> currentScreen
+                    }
+                }
                 Screen.Creations -> CreationsScreen()
                 Screen.Settings -> SettingsScreen()
                 Screen.About -> AboutScreen()
@@ -390,10 +395,7 @@ fun BasicScreen(
             }
         }
 
-        if (SettingsManager.isDebug(context)) {
-            val logs = DebugLogger.getLogs().joinToString("\n")
-            Text(logs, modifier = Modifier.fillMaxWidth())
-        }
+        
     }
 }
 

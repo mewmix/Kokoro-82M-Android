@@ -231,7 +231,7 @@ fun BookScreen(
                 }
                 Button(
                     onClick = {
-                        scope.launch {
+                        scope.launch(Dispatchers.IO) {
                             try {
                                 debugMessage = null
                                 val mixedVector = mixStyles(
@@ -253,7 +253,9 @@ fun BookScreen(
                                 }
                                 saveAudio(audioData.toFloatArray(), context)
                             } catch (e: Exception) {
-                                debugMessage = e.localizedMessage
+                                withContext(Dispatchers.Main) {
+                                    debugMessage = e.localizedMessage
+                                }
                             }
                         }
                     },
