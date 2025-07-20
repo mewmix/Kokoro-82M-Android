@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.res.Resources
 import com.example.kokoro82m.R
 import com.github.medavox.ipa_transcribers.Language
+import com.example.kokoro82m.utils.SymbolDictionary
 import java.io.IOException
 
 class PhonemeConverter(context: Context) {
@@ -186,6 +187,9 @@ class PhonemeConverter(context: Context) {
 
         normalizedText = normalizedText.replace(Regex("(?<=\\d),(?=\\d)"), "")
         normalizedText = normalizedText.replace(Regex("(?<=\\d)-(?=\\d)"), " to ")
+
+        normalizedText = SymbolDictionary.replaceSymbols(normalizedText)
+        normalizedText = normalizedText.replace(Regex("\\s+"), " ")
 
         return normalizedText.trim()
     }
