@@ -22,6 +22,10 @@ Gradle Sync and Build
 ## Prebuilt apk files
 See [release](https://github.com/puff-dayo/Kokoro-82M-Android/releases/).
 
+## Text Sanitization
+Numbers and basic symbols like `-` are automatically expanded before
+tokenization. For example `1-2` becomes `one dash two`.
+
 ## TODO
 
 - Add a voice style mixer [Done]
