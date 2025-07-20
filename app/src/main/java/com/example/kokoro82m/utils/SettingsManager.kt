@@ -8,19 +8,19 @@ object SettingsManager {
     }
 
     fun isDebug(context: Context): Boolean =
-        DatabaseManager.getSetting(context, "debug", "0") == "1"
+        (DatabaseManager.getSetting(context, "debug") ?: "0") == "1"
 
     fun setStyle(context: Context, style: String) {
         DatabaseManager.setSetting(context, "style", style)
     }
 
     fun getStyle(context: Context, default: String = "af_sarah"): String =
-        DatabaseManager.getSetting(context, "style", default) ?: default
+        DatabaseManager.getSetting(context, "style") ?: default
 
     fun setSpeed(context: Context, speed: Float) {
         DatabaseManager.setSetting(context, "speed", speed.toString())
     }
 
     fun getSpeed(context: Context, default: Float = 1.0f): Float =
-        DatabaseManager.getSetting(context, "speed", default.toString())?.toFloat() ?: default
+        DatabaseManager.getSetting(context, "speed")?.toFloat() ?: default
 }

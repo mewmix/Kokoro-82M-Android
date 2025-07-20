@@ -210,10 +210,15 @@ class PhonemeConverter(context: Context) {
             result = result.replace("ti", "di")
         }
 
+        val originalChars = result.toList()
+        val filteredChars = originalChars.filter { it in VOCAB.keys || it.toString().matches(Regex("[^a-zA-Z']+")) }
+        val removedChars = originalChars.filterNot { it in VOCAB.keys || it.toString().matches(Regex("[^a-zA-Z']+")) }
 
-        result = result.filter { it in VOCAB.keys || it.toString().matches(Regex("[^a-zA-Z']+")) }
+        if (removedChars.isNotEmpty()) {
+            DebugLogger.log("Removed invalid symbols: ${removedChars.joinToString("")}")
+        }
 
-        return result.trim()
+        return filteredChars.joinToString("").trim()
     }
 
     companion object {

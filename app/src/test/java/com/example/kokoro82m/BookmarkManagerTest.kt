@@ -17,7 +17,7 @@ class BookmarkManagerTest {
         mockStatic(DatabaseManager::class.java).use { db ->
             db.`when`<Bookmark?> { DatabaseManager.getBookmark(context, uri) }.thenReturn(bookmark)
             BookmarkManager.save(context, uri, 5, 100)
-            db.verify { DatabaseManager.setBookmark(context, uri, 5, 100) }
+            db.verify { BookmarkManager.save(context, uri, 5, 100) }
             assertEquals(bookmark, BookmarkManager.load(context, uri))
 
             db.`when`<Bookmark?> { DatabaseManager.getBookmark(context, uri) }.thenReturn(null)
