@@ -1,0 +1,13 @@
+package com.example.kokoro82m.utils
+
+import android.content.Context
+
+object ProjectManager {
+    fun save(context: Context, project: Project) {
+        DatabaseManager.setProject(context, project)
+    }
+
+    fun load(context: Context, uri: String): Project? {
+        return DatabaseManager.getProject(context, uri)
+    }
+}

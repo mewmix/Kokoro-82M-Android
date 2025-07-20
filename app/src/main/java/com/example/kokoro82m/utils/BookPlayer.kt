@@ -9,31 +9,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-
-suspend fun playAudio(
-    line: String,
-    styleVector: Array<FloatArray>,
-    speed: Float,
-    session: OrtSession,
-    phonemeConverter: PhonemeConverter,
-    audioPlayer: AudioPlayer,
-    position: Int = 0,
-) {
-    try {
-        DebugLogger.log("Playing audio for line: '$line' from position $position")
-        val phonemes = phonemeConverter.phonemize(line)
-        val (audio, _) = createAudioFromStyleVector(
-            phonemes = phonemes,
-            voice = styleVector,
-            speed = speed,
-            session = session,
-        )
-        audioPlayer.prepare(audio, position)
-        audioPlayer.playBlocking()
-    } catch (e: Exception) {
-        DebugLogger.log("playAudio failed: ${e.localizedMessage}")
-    }
-}
+import kotlinx.coroutines.channels.Channel
 
 fun playBook(
     scope: CoroutineScope,
@@ -56,14 +32,39 @@ fun playBook(
     return scope.launch(Dispatchers.IO) {
         DebugLogger.log("Starting playbook from line $startLine")
         var completed = true
+        val audioBuffer = Channel<Pair<FloatArray, Int>>(Channel.BUFFERED)
+
+        // Producer
+        val producerJob = launch {
+            try {
+                val mixedVector = mixStyles(
+                    styleLoader = styleLoader,
+                    styles = selectedStyles,
+                    weights = weights,
+                    mode = mode,
+                )
+                for (index in startLine until lines.size) {
+                    if (!isActive) break
+                    val line = lines[index]
+                    val phonemes = phonemeConverter.phonemize(line)
+                    val (audio, _) = createAudioFromStyleVector(
+                        phonemes = phonemes,
+                        voice = mixedVector,
+                        speed = speed,
+                        session = session,
+                    )
+                    audioBuffer.send(Pair(audio, index))
+                }
+            } catch (e: Exception) {
+                DebugLogger.log("Audio generation failed: ${e.localizedMessage}")
+            } finally {
+                audioBuffer.close()
+            }
+        }
+
+        // Consumer
         try {
-            val mixedVector = mixStyles(
-                styleLoader = styleLoader,
-                styles = selectedStyles,
-                weights = weights,
-                mode = mode,
-            )
-            for (index in startLine until lines.size) {
+            for ((audio, index) in audioBuffer) {
                 if (!isActive) {
                     completed = false
                     break
@@ -72,22 +73,15 @@ fun playBook(
                 withContext(Dispatchers.Main) {
                     onLineChanged(index)
                 }
-                val line = lines[index]
                 val position = if (index == bookmark?.line) bookmark.position else 0
                 DebugLogger.log("Playing line $index with position $position")
 
-                playAudio(
-                    line = line,
-                    styleVector = mixedVector,
-                    speed = speed,
-                    session = session,
-                    phonemeConverter = phonemeConverter,
-                    audioPlayer = audioPlayer,
-                    position = position,
-                )
+                audioPlayer.prepare(audio, position)
+                audioPlayer.playBlocking()
 
                 if (audioPlayer.getState() == PlayerState.PAUSED) {
                     completed = false
+                    producerJob.cancel()
                     break
                 }
             }

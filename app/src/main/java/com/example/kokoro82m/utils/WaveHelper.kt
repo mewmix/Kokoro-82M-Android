@@ -21,7 +21,7 @@ fun saveAudio(audioData: FloatArray, context: Context, name: String) {
     val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
 
     val contentValues = ContentValues().apply {
-        put(MediaStore.MediaColumns.DISPLAY_NAME, "${safeName}_$timeStamp.wav")
+        put(MediaStore.MediaColumns.DISPLAY_NAME, "KOKORO_${safeName}_$timeStamp.wav")
         put(MediaStore.MediaColumns.MIME_TYPE, "audio/wav")
         put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_MUSIC)
     }
