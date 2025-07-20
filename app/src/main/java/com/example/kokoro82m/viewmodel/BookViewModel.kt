@@ -4,12 +4,19 @@ import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import ai.onnxruntime.OrtSession
 import com.example.kokoro82m.utils.AudioPlayer
+import com.example.kokoro82m.utils.Bookmark
+import com.example.kokoro82m.utils.InterpolationMode
+import com.example.kokoro82m.utils.PhonemeConverter
 import com.example.kokoro82m.utils.PlayerState
+import com.example.kokoro82m.utils.StyleLoader
+import com.example.kokoro82m.utils.playBook
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 class BookViewModel : ViewModel() {
@@ -30,6 +37,8 @@ class BookViewModel : ViewModel() {
         onStateChanged = { _playerState.value = it }
     )
 
+    private var playJob: Job? = null
+
     fun loadBook(context: Context, uri: Uri) {
         _bookUri.value = uri
         viewModelScope.launch(Dispatchers.IO) {
@@ -42,5 +51,47 @@ class BookViewModel : ViewModel() {
 
     fun setCurrentLine(line: Int) {
         _currentLine.value = line
+    }
+
+    fun startPlayback(
+        session: OrtSession,
+        phonemeConverter: PhonemeConverter,
+        styleLoader: StyleLoader,
+        selectedStyles: List<String>,
+        weights: Map<String, Float>,
+        mode: InterpolationMode,
+        speed: Float,
+        lines: List<String>,
+        startLine: Int,
+        bookUri: Uri?,
+        context: Context,
+        bookmark: Bookmark?,
+        onFinished: () -> Unit,
+    ) {
+        playJob?.cancel()
+        playJob = playBook(
+            scope = viewModelScope,
+            session = session,
+            phonemeConverter = phonemeConverter,
+            styleLoader = styleLoader,
+            selectedStyles = selectedStyles,
+            weights = weights,
+            mode = mode,
+            speed = speed,
+            lines = lines,
+            startLine = startLine,
+            bookUri = bookUri,
+            audioPlayer = audioPlayer,
+            context = context,
+            onLineChanged = { setCurrentLine(it) },
+            onFinished = onFinished,
+            bookmark = bookmark,
+        )
+    }
+
+    fun stopPlayback() {
+        playJob?.cancel()
+        playJob = null
+        audioPlayer.stop()
     }
 }
