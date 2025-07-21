@@ -44,10 +44,10 @@ android {
 }
 
 dependencies {
-    implementation("com.google.ai.edge.litert:litert:2.0.1-alpha")
-    runtimeOnly("com.google.ai.edge.litert:litert-gpu:2.0.1-alpha")
-    implementation("com.google.mediapipe:tasks-core:0.10.26")
-    implementation("com.google.mediapipe:tasks-genai:0.10.26")
+    implementation("com.google.ai.edge.litert:litert:1.0.1")
+    runtimeOnly("com.google.ai.edge.litert:litert-gpu:1.0.1")
+    implementation("com.google.mediapipe:tasks-core:latest.release")
+    implementation("com.google.mediapipe:tasks-genai:latest.release")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
 

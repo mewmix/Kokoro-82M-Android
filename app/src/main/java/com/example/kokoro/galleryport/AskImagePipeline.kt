@@ -2,9 +2,10 @@ package com.example.kokoro.galleryport
 
 import android.content.Context
 import android.graphics.Bitmap
-import com.google.mediapipe.tasks.vision.core.functional.BitmapImageBuilder
+import com.google.mediapipe.framework.image.BitmapImageBuilder
 import com.google.mediapipe.tasks.genai.llminference.*
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
 
 object AskImagePipeline {
@@ -19,7 +20,11 @@ object AskImagePipeline {
         sess.addImage(BitmapImageBuilder(bitmap).build())
         sess.addQueryChunk(q)
         sess.generateResponseAsync { res, done ->
-            trySend(res.partialText); done
+            trySend(res)
+            if (done) {
+                close()
+            }
         }
+        awaitClose { }
     }
 }
