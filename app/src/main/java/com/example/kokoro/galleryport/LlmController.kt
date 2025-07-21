@@ -5,23 +5,26 @@ import com.google.mediapipe.tasks.genai.llminference.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
-import java.nio.MappedByteBuffer
+import java.io.File
 
 class LlmController private constructor(val llm: LlmInference) {
 
     companion object {
-        suspend fun bootstrap(ctx: Context): LlmController {
-            // This is the model we will be using. Feel free to change it to any other model.
-            val modelUrl = "https://huggingface.co/google/gemma-2b-it-cpu/resolve/main/gemma-2b-it-cpu-int4.bin"
-            val modelAlias = "gemma-2b-it-cpu-int4.bin"
+        private const val CHAT_MODEL_ID = "gemma-2b-it-cpu"
+        fun bootstrap(ctx: Context): LlmController? {
+            val modelManager = com.example.kokoro82m.data.ModelManager(ctx)
+            val model = modelManager.getModel(CHAT_MODEL_ID)
 
-            val f = ModelHub.get(
-                ctx,
-                modelUrl,
-                modelAlias
-            )
+            if (model == null || !model.isDownloaded) {
+                return null
+            }
+
+            val modelFile = File(ctx.filesDir, "models/${model.id}.task")
+            if (!modelFile.exists()) return null
+
+
             val opts = LlmInference.LlmInferenceOptions.builder()
-                .setModelPath(f.absolutePath)
+                .setModelPath(modelFile.absolutePath)
                 .setMaxTokens(4096)
                 .build()
             return LlmController(LlmInference.createFromOptions(ctx, opts))

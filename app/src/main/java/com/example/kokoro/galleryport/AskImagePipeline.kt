@@ -11,6 +11,10 @@ import kotlinx.coroutines.flow.callbackFlow
 object AskImagePipeline {
     suspend fun run(ctx: Context, bitmap: Bitmap, q: String): Flow<String> = callbackFlow {
         val ctrl = LlmController.bootstrap(ctx)
+        if (ctrl == null) {
+            close(IllegalStateException("LlmController could not be bootstrapped"))
+            return@callbackFlow
+        }
         val sess = LlmInferenceSession.createFromOptions(
             ctrl.llm,
             LlmInferenceSession.LlmInferenceSessionOptions.builder()

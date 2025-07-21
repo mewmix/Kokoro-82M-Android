@@ -1,23 +1,15 @@
 package com.example.kokoro.galleryport
 
 import android.content.Context
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import okhttp3.OkHttpClient
-import okhttp3.Request
+import com.example.kokoro82m.data.ModelManager
 import java.io.File
 
 object ModelHub {
-    private val client = OkHttpClient()
-
-    suspend fun get(ctx: Context, url: String, alias: String): File =
-        withContext(Dispatchers.IO) {
-            val dst = File(ctx.filesDir, alias)
-            if (!dst.exists()) {
-                client.newCall(Request.Builder().url(url).build()).execute().use { rsp ->
-                    dst.outputStream().use { rsp.body!!.byteStream().copyTo(it) }
-                }
-            }
-            dst
-        }
+    suspend fun get(ctx: Context, modelId: String): File? {
+        val modelManager = ModelManager(ctx)
+        val model = modelManager.getModel(modelId) ?: return null
+        if (!model.isDownloaded) return null
+        val modelFile = File(ctx.filesDir, "models/${model.id}.task")
+        return if (modelFile.exists()) modelFile else null
+    }
 }
