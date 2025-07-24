@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.callbackFlow
 
 object AskImagePipeline {
     suspend fun run(ctx: Context, bitmap: Bitmap, q: String): Flow<String> = callbackFlow {
-        val ctrl = LlmController.bootstrap(ctx)
+        val ctrl = LlmController.bootstrap(ctx, "gemma-3n-E4B-it-int4")
         if (ctrl == null) {
             close(IllegalStateException("LlmController could not be bootstrapped"))
             return@callbackFlow

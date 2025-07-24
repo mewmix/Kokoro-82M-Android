@@ -10,10 +10,9 @@ import java.io.File
 class LlmController private constructor(val llm: LlmInference) {
 
     companion object {
-        private const val CHAT_MODEL_ID = "gemma-2b-it-cpu"
-        fun bootstrap(ctx: Context): LlmController? {
+        fun bootstrap(ctx: Context, modelId: String): LlmController? {
             val modelManager = com.example.kokoro82m.data.ModelManager(ctx)
-            val model = modelManager.getModel(CHAT_MODEL_ID)
+            val model = modelManager.getModel(modelId)
 
             if (model == null || !model.isDownloaded) {
                 return null

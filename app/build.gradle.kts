@@ -47,7 +47,7 @@ dependencies {
     implementation("com.google.ai.edge.litert:litert:1.0.1")
     runtimeOnly("com.google.ai.edge.litert:litert-gpu:1.0.1")
     implementation("com.google.mediapipe:tasks-core:latest.release")
-    implementation("com.google.mediapipe:tasks-genai:latest.release")
+    implementation("com.google.mediapipe:tasks-genai:0.10.14")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
 
