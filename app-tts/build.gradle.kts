@@ -1,5 +1,5 @@
 plugins {
-    alias(libs.plugins.android.application)
+    alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
 }
@@ -9,7 +9,7 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.kokoro82m"
+        
         minSdk = 29
         targetSdk = 35
         versionCode = 1
@@ -44,11 +44,7 @@ android {
 }
 
 dependencies {
-    implementation(project(":app-chat"))
-    implementation("com.google.ai.edge.litert:litert:1.0.1")
-    runtimeOnly("com.google.ai.edge.litert:litert-gpu:1.0.1")
-    implementation("com.google.mediapipe:tasks-core:latest.release")
-    implementation("com.google.mediapipe:tasks-genai:latest.release")
+    
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
 
@@ -80,7 +76,6 @@ dependencies {
     implementation("com.github.medavox:IPA-Transcribers:v0.2")
 
     val lifecycle_version = "2.8.7"
-    val arch_version = "2.2.0"
 
     implementation("com.google.code.gson:gson:2.10.1")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycle_version")
