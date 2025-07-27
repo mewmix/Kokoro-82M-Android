@@ -12,19 +12,35 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.FileOutputStream
 
+data class LlmParameters(
+    val topK: Int = 1,
+    val temperature: Float = 0.8f,
+    val randomSeed: Int = 101
+)
+
 class LlmInference(
     private val context: Context,
     private val modelPath: String
 ) {
 
     private var llmInference: LlmInference? = null
+    private var currentParams: LlmParameters = LlmParameters()
 
-    fun initialize() {
+    fun initialize(params: LlmParameters = currentParams) {
+        llmInference?.close()
+        currentParams = params
         val options = LlmInferenceOptions.builder()
             .setModelPath(modelPath)
+            .setTopK(params.topK)
+            .setTemperature(params.temperature)
+            .setRandomSeed(params.randomSeed)
             .build()
 
         llmInference = LlmInference.createFromOptions(context, options)
+    }
+
+    fun updateParameters(params: LlmParameters) {
+        initialize(params)
     }
 
     fun sendMessage(prompt: String, resultListener: (partialResult: String, done: Boolean) -> Unit) {

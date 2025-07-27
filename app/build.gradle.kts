@@ -44,6 +44,7 @@ android {
 }
 
 dependencies {
+    implementation(project(":app-tts"))
     implementation(project(":app-chat"))
     implementation("com.google.ai.edge.litert:litert:1.0.1")
     runtimeOnly("com.google.ai.edge.litert:litert-gpu:1.0.1")
