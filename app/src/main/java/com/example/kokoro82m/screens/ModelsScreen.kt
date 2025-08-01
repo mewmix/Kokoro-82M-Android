@@ -1,6 +1,7 @@
 package com.example.kokoro82m.screens
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -24,6 +25,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
 import com.example.kokoro82m.data.Model
 import com.example.kokoro82m.data.ModelDownloader
@@ -92,18 +94,19 @@ fun ModelsScreen(userPreferencesRepository: UserPreferencesRepository) {
         )
     }
 
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        items(models) { model ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column {
+    Box(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            items(models) { model ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column {
                     Text(text = model.name, style = androidx.compose.material3.MaterialTheme.typography.titleMedium)
                     Text(text = model.description, style = androidx.compose.material3.MaterialTheme.typography.bodyMedium)
                 }
@@ -132,6 +135,24 @@ fun ModelsScreen(userPreferencesRepository: UserPreferencesRepository) {
                         }
                     }
                 }
+            }
+        }
+
+        if (progressMap.isNotEmpty()) {
+            val entry = progressMap.entries.first()
+            val downloading = models.find { it.id == entry.key }
+            val progress = entry.value
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                LinearProgressIndicator(progress = progress, modifier = Modifier.fillMaxWidth())
+                Text(
+                    text = "Downloading ${downloading?.name ?: "model"} ${(progress * 100).toInt()}%",
+                    modifier = Modifier.padding(top = 8.dp)
+                )
             }
         }
     }
