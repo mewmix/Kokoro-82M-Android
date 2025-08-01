@@ -48,6 +48,7 @@ import com.example.kokoro82m.viewmodel.ChatTtsViewModel
 @Composable
 fun ChatTtsScreen(
     viewModel: ChatTtsViewModel,
+    modelName: String,
     onBackPressed: () -> Unit
 ) {
     val chatMessages by viewModel.chatMessages.collectAsState()
@@ -72,7 +73,7 @@ fun ChatTtsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Chat & TTS") },
+                title = { Text("$modelName Chat & TTS") },
                 navigationIcon = {
                     IconButton(onClick = onBackPressed) {
                         Icon(Icons.Filled.ArrowBack, contentDescription = "Back")

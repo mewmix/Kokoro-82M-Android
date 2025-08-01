@@ -11,6 +11,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.net.URL
 import javax.net.ssl.HttpsURLConnection
+import com.example.kokoro82m.utils.DebugLogger
 
 class ModelDownloader(
     private val context: Context,
@@ -31,6 +32,7 @@ class ModelDownloader(
             if (finalFile.exists()) {
                 model.isDownloaded = true
                 model.hasPartial = false
+                DebugLogger.log("ModelDownloader: ${model.name} already downloaded")
                 return@launch
             }
 
@@ -38,6 +40,7 @@ class ModelDownloader(
             model.hasPartial = existingSize > 0
 
             try {
+                DebugLogger.log("ModelDownloader: Starting download of ${model.name}")
                 val url = URL(model.downloadUrl)
                 val connection = url.openConnection() as HttpsURLConnection
                 token?.let { connection.setRequestProperty("Authorization", "Bearer $it") }
@@ -70,8 +73,10 @@ class ModelDownloader(
                 tempFile.renameTo(finalFile)
                 model.isDownloaded = true
                 model.hasPartial = false
-            } catch (_: Exception) {
+                DebugLogger.log("ModelDownloader: Download of ${model.name} completed")
+            } catch (e: Exception) {
                 model.hasPartial = tempFile.exists()
+                DebugLogger.log("ModelDownloader: Error downloading ${model.name}: ${e.message}")
             } finally {
                 _progress.value = _progress.value.toMutableMap().apply { remove(model.id) }
             }

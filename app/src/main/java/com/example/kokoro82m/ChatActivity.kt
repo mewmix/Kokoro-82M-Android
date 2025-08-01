@@ -12,20 +12,22 @@ import com.example.kokoro.chat.ChatScreen
 import com.example.kokoro.chat.ChatViewModel
 import com.example.kokoro.chat.LlmInference
 import com.example.kokoro82m.data.ModelManager
+import com.example.kokoro82m.data.Model
+import com.example.kokoro82m.utils.DebugLogger
 import java.io.File
 
 class ChatActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        DebugLogger.initialize(this)
 
-        val modelId = "gemma-3n-E4B-it-int4"
         val modelManager = ModelManager(applicationContext)
-        val model = modelManager.getModel(modelId)
+        val downloaded = modelManager.models.filter { it.isDownloaded }
 
-        if (model == null || !model.isDownloaded) {
+        if (downloaded.isEmpty()) {
             Toast.makeText(
                 this,
-                "Chat model not downloaded. Redirecting to model page.",
+                "No chat models downloaded. Redirecting to model page.",
                 Toast.LENGTH_LONG
             ).show()
             startActivity(
@@ -37,7 +39,26 @@ class ChatActivity : ComponentActivity() {
             return
         }
 
-        val modelFile = File(filesDir, "models/$modelId.task")
+        if (downloaded.size == 1) {
+            startChat(downloaded.first())
+        } else {
+            selectModel(downloaded)
+        }
+    }
+
+    private fun selectModel(models: List<Model>) {
+        val names = models.map { it.name }.toTypedArray()
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Select Chat Model")
+            .setItems(names) { _, which ->
+                startChat(models[which])
+            }
+            .setOnCancelListener { finish() }
+            .show()
+    }
+
+    private fun startChat(model: Model) {
+        val modelFile = File(filesDir, "models/${model.id}.task")
 
         val llmInference = LlmInference(
             context = applicationContext,
@@ -56,6 +77,7 @@ class ChatActivity : ComponentActivity() {
         setContent {
             ChatScreen(
                 viewModel = viewModel,
+                modelName = model.name,
                 onBackPressed = { finish() }
             )
         }

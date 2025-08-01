@@ -11,6 +11,7 @@ import com.example.kokoro82m.utils.InterpolationMode
 import com.example.kokoro82m.utils.PhonemeConverter
 import com.example.kokoro82m.utils.PlayerState
 import com.example.kokoro82m.utils.StyleLoader
+import com.example.kokoro82m.utils.DebugLogger
 import com.example.kokoro82m.utils.createAudioFromStyleVector
 import com.example.kokoro82m.utils.mixStyles
 import kotlinx.coroutines.Dispatchers
@@ -65,6 +66,7 @@ class ChatTtsViewModel(
     }
 
     fun sendMessage(message: String) {
+        DebugLogger.log("ChatTtsViewModel sendMessage: $message")
         _chatMessages.value += ChatMessage(message, true)
         _isLoading.value = true
 
@@ -82,6 +84,7 @@ class ChatTtsViewModel(
                     // 3. Hop back to the main thread safely for UI updates & suspend function calls
                     viewModelScope.launch { // Defaults to Main dispatcher for viewModelScope
                         _isLoading.value = false
+                        DebugLogger.log("ChatTtsViewModel response complete")
                         synthesizeAndPlay(responseBuilder.toString()) // synthesizeAndPlay can now be called
                     }
                 }

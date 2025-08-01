@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun ChatScreen(
     viewModel: ChatViewModel,
+    modelName: String,
     onBackPressed: () -> Unit
 ) {
     val chatState by viewModel.chatState.collectAsState()
@@ -50,7 +51,7 @@ fun ChatScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Gemma 3n IT 4B Chat") },
+                title = { Text("$modelName Chat") },
                 navigationIcon = {
                     IconButton(onClick = onBackPressed) {
                         Icon(Icons.Filled.ArrowBack, contentDescription = "Back")

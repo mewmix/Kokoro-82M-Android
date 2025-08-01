@@ -2,6 +2,7 @@ package com.example.kokoro.chat
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.kokoro82m.utils.DebugLogger // This import will now resolve correctly
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,6 +20,7 @@ class ChatViewModel(private val llmInference: LlmInference) : ViewModel() {
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
     fun sendMessage(message: String) {
+        DebugLogger.log("ChatViewModel sendMessage: $message")
         _chatState.value = _chatState.value + ChatMessage(message, true)
         _isLoading.value = true
 
@@ -26,6 +28,7 @@ class ChatViewModel(private val llmInference: LlmInference) : ViewModel() {
             llmInference.sendMessage(message) { partialResult, done ->
                 if (done) {
                     _isLoading.value = false
+                    DebugLogger.log("ChatViewModel response complete")
                 } else {
                     val lastMessage = _chatState.value.lastOrNull { !it.isFromUser }
                     if (lastMessage != null) {

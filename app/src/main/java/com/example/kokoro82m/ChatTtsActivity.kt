@@ -11,24 +11,26 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.example.kokoro.chat.LlmInference
 import com.example.kokoro82m.data.ModelManager
+import com.example.kokoro82m.data.Model
 import com.example.kokoro82m.screens.ChatTtsScreen
 import com.example.kokoro82m.utils.OnnxRuntimeManager
+import com.example.kokoro82m.utils.DebugLogger
 import com.example.kokoro82m.viewmodel.ChatTtsViewModel
 import java.io.File
 
 class ChatTtsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        DebugLogger.initialize(this)
 
         val ortSession = OnnxRuntimeManager.getSession()
         val modelManager = ModelManager(applicationContext)
-        val chatModelId = "gemma-3n-E4B-it-int4"
-        val chatModel = modelManager.getModel(chatModelId)
+        val downloaded = modelManager.models.filter { it.isDownloaded }
 
-        if (chatModel == null || !chatModel.isDownloaded) {
+        if (downloaded.isEmpty()) {
             Toast.makeText(
                 this,
-                "Chat model not downloaded. Redirecting to model page.",
+                "No chat models downloaded. Redirecting to model page.",
                 Toast.LENGTH_LONG
             ).show()
             startActivity(
@@ -40,7 +42,28 @@ class ChatTtsActivity : ComponentActivity() {
             return
         }
 
-        val modelFile = File(filesDir, "models/${chatModel.id}.task")
+        if (downloaded.size == 1) {
+            startChat(downloaded.first(), ortSession)
+        } else {
+            selectModel(downloaded, ortSession)
+        }
+
+        // Chat will start in startChat or selectModel
+    }
+
+    private fun selectModel(models: List<Model>, session: ai.onnxruntime.OrtSession) {
+        val names = models.map { it.name }.toTypedArray()
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Select Chat Model")
+            .setItems(names) { _, which ->
+                startChat(models[which], session)
+            }
+            .setOnCancelListener { finish() }
+            .show()
+    }
+
+    private fun startChat(model: Model, session: ai.onnxruntime.OrtSession) {
+        val modelFile = File(filesDir, "models/${model.id}.task")
         val llmInference = LlmInference(applicationContext, modelFile.absolutePath)
 
         val viewModel: ChatTtsViewModel by viewModels {
@@ -48,7 +71,7 @@ class ChatTtsActivity : ComponentActivity() {
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
                     if (modelClass.isAssignableFrom(ChatTtsViewModel::class.java)) {
                         @Suppress("UNCHECKED_CAST")
-                        return ChatTtsViewModel(applicationContext, ortSession, llmInference) as T
+                        return ChatTtsViewModel(applicationContext, session, llmInference) as T
                     }
                     throw IllegalArgumentException("Unknown ViewModel class")
                 }
@@ -57,7 +80,7 @@ class ChatTtsActivity : ComponentActivity() {
 
         setContent {
             KokoroTheme {
-                ChatTtsScreen(viewModel = viewModel, onBackPressed = { finish() })
+                ChatTtsScreen(viewModel = viewModel, modelName = model.name, onBackPressed = { finish() })
             }
         }
     }

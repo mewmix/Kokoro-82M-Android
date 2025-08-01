@@ -32,6 +32,7 @@ import com.example.kokoro82m.data.Model
 import com.example.kokoro82m.data.ModelDownloader
 import com.example.kokoro82m.data.ModelManager
 import com.example.kokoro82m.data.UserPreferencesRepository
+import com.example.kokoro82m.utils.DebugLogger
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -79,6 +80,7 @@ fun ModelsScreen(userPreferencesRepository: UserPreferencesRepository) {
                 Button(
                     onClick = {
                         selectedModel?.let {
+                            DebugLogger.log("ModelsScreen: Downloading ${it.name}")
                             modelDownloader.downloadModel(it)
                         }
                         showDialog = false
@@ -116,7 +118,10 @@ fun ModelsScreen(userPreferencesRepository: UserPreferencesRepository) {
                         if (model.isDownloaded) {
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Text("Downloaded")
-                                Button(onClick = { modelManager.deleteModel(model) }) { Text("Delete") }
+                                Button(onClick = {
+                                    DebugLogger.log("ModelsScreen: Deleting ${model.name}")
+                                    modelManager.deleteModel(model)
+                                }) { Text("Delete") }
                             }
                         } else if (progress != null) {
                             LinearProgressIndicator(progress = progress, modifier = Modifier.fillMaxWidth())
@@ -126,14 +131,19 @@ fun ModelsScreen(userPreferencesRepository: UserPreferencesRepository) {
                                     if (model.gated) {
                                         selectedModel = model
                                         showDialog = true
+                                        DebugLogger.log("ModelsScreen: Prompting token for ${model.name}")
                                     } else {
+                                        DebugLogger.log("ModelsScreen: Downloading ${model.name}")
                                         modelDownloader.downloadModel(model)
                                     }
                                 }) {
                                     Text(if (model.hasPartial) "Resume" else "Download")
                                 }
                                 if (model.hasPartial) {
-                                    Button(onClick = { modelManager.deleteModel(model) }) { Text("Delete") }
+                                    Button(onClick = {
+                                        DebugLogger.log("ModelsScreen: Deleting partial ${model.name}")
+                                        modelManager.deleteModel(model)
+                                    }) { Text("Delete") }
                                 }
                             }
                         }
