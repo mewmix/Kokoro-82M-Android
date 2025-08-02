@@ -53,7 +53,6 @@ fun ChatTtsScreen(
 ) {
     val chatMessages by viewModel.chatMessages.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
-    val isSynthesizing by viewModel.isSynthesizing.collectAsState()
     val playerState by viewModel.playerState.collectAsState()
 
     val selectedStyles by viewModel.selectedStyles.collectAsState()
@@ -129,10 +128,9 @@ fun ChatTtsScreen(
             }
 
             // Status Indicators
-            if (isLoading || isSynthesizing || playerState == PlayerState.PLAYING) {
+            if (isLoading || playerState == PlayerState.PLAYING) {
                 val statusText = when {
                     isLoading -> "Assistant is thinking..."
-                    isSynthesizing -> "Synthesizing audio..."
                     playerState == PlayerState.PLAYING -> "Speaking..."
                     else -> ""
                 }
@@ -144,7 +142,7 @@ fun ChatTtsScreen(
                 ) {
                     Text(text = statusText, style = androidx.compose.material3.MaterialTheme.typography.bodySmall)
                     Spacer(modifier = Modifier.width(8.dp))
-                    if(isLoading || isSynthesizing) LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                    if(isLoading) LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                 }
             }
 
@@ -194,7 +192,7 @@ fun ChatTtsScreen(
                             message = ""
                         }
                     },
-                    enabled = message.isNotBlank() && !isLoading && !isSynthesizing && playerState == PlayerState.IDLE
+                    enabled = message.isNotBlank() && !isLoading && playerState == PlayerState.IDLE
                 ) {
                     Icon(Icons.Default.Send, contentDescription = "Send")
                 }
