@@ -1,16 +1,18 @@
 package com.example.kokoro82m.data
 
 import android.content.Context
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.getWorkInfoByIdFlow
+import androidx.work.workDataOf
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.io.File
-import java.io.FileOutputStream
-import java.net.URL
-import javax.net.ssl.HttpsURLConnection
 import com.example.kokoro82m.utils.DebugLogger
 
 class ModelDownloader(
@@ -20,6 +22,8 @@ class ModelDownloader(
     private val scope = CoroutineScope(Dispatchers.IO)
     private val _progress = MutableStateFlow<Map<String, Float>>(emptyMap())
     val progress: StateFlow<Map<String, Float>> = _progress
+
+    private val workManager = WorkManager.getInstance(context)
 
     fun downloadModel(model: Model) {
         scope.launch {
@@ -32,53 +36,36 @@ class ModelDownloader(
             if (finalFile.exists()) {
                 model.isDownloaded = true
                 model.hasPartial = false
+                model.localPath = finalFile.absolutePath
                 DebugLogger.log("ModelDownloader: ${model.name} already downloaded")
                 return@launch
             }
 
-            val existingSize = if (tempFile.exists()) tempFile.length() else 0L
-            model.hasPartial = existingSize > 0
+            model.hasPartial = tempFile.exists()
 
-            try {
-                DebugLogger.log("ModelDownloader: Starting download of ${model.name}")
-                val url = URL(model.downloadUrl)
-                val connection = url.openConnection() as HttpsURLConnection
-                token?.let { connection.setRequestProperty("Authorization", "Bearer $it") }
-                if (existingSize > 0) {
-                    connection.setRequestProperty("Range", "bytes=$existingSize-")
+            val request = OneTimeWorkRequestBuilder<DownloadWorker>()
+                .setInputData(
+                    workDataOf(
+                        "model_id" to model.id,
+                        "download_url" to model.downloadUrl,
+                        "hf_token" to token,
+                        "model_name" to model.name
+                    )
+                )
+                .build()
+            workManager.enqueue(request)
+
+            workManager.getWorkInfoByIdFlow(request.id).collect { info ->
+                val p = info.progress.getFloat("progress", -1f)
+                if (p >= 0f) {
+                    _progress.value = _progress.value.toMutableMap().apply { put(model.id, p) }
                 }
-                connection.connect()
-
-                val contentLength = connection.getHeaderFieldInt("Content-Length", -1)
-                val total = if (contentLength > 0) contentLength + existingSize else -1
-                val input = connection.inputStream
-
-                val output = FileOutputStream(tempFile, existingSize > 0)
-
-                val buffer = ByteArray(1024)
-                var bytesRead: Int
-                var downloaded = existingSize
-                while (input.read(buffer).also { bytesRead = it } != -1) {
-                    output.write(buffer, 0, bytesRead)
-                    downloaded += bytesRead
-                    if (total > 0) {
-                        val p = downloaded.toFloat() / total
-                        _progress.value = _progress.value.toMutableMap().apply { put(model.id, p) }
-                    }
+                if (info.state.isFinished) {
+                    _progress.value = _progress.value.toMutableMap().apply { remove(model.id) }
+                    model.isDownloaded = finalFile.exists()
+                    model.hasPartial = !model.isDownloaded && tempFile.exists()
+                    model.localPath = if (model.isDownloaded) finalFile.absolutePath else null
                 }
-
-                output.close()
-                input.close()
-
-                tempFile.renameTo(finalFile)
-                model.isDownloaded = true
-                model.hasPartial = false
-                DebugLogger.log("ModelDownloader: Download of ${model.name} completed")
-            } catch (e: Exception) {
-                model.hasPartial = tempFile.exists()
-                DebugLogger.log("ModelDownloader: Error downloading ${model.name}: ${e.message}")
-            } finally {
-                _progress.value = _progress.value.toMutableMap().apply { remove(model.id) }
             }
         }
     }

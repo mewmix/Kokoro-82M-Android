@@ -9,4 +9,5 @@ data class Model(
     val gated: Boolean,
     var isDownloaded: Boolean = false,
     var hasPartial: Boolean = false,
+    var localPath: String? = null,
 )

@@ -63,7 +63,7 @@ class ChatTtsActivity : ComponentActivity() {
     }
 
     private fun startChat(model: Model, session: ai.onnxruntime.OrtSession) {
-        val modelFile = File(filesDir, "models/${model.id}.task")
+        val modelFile = model.localPath?.let { File(it) } ?: File(filesDir, "models/${model.id}.task")
         val llmInference = LlmInference(applicationContext, modelFile.absolutePath)
 
         val viewModel: ChatTtsViewModel by viewModels {

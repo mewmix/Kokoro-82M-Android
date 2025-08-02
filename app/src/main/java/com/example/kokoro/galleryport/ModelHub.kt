@@ -9,7 +9,7 @@ object ModelHub {
         val modelManager = ModelManager(ctx)
         val model = modelManager.getModel(modelId) ?: return null
         if (!model.isDownloaded) return null
-        val modelFile = File(ctx.filesDir, "models/${model.id}.task")
+        val modelFile = model.localPath?.let { File(it) } ?: File(ctx.filesDir, "models/${model.id}.task")
         return if (modelFile.exists()) modelFile else null
     }
 }

@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -20,6 +21,7 @@ import com.example.kokoro82m.utils.SettingsManager
 fun SettingsScreen() {
     val context = LocalContext.current
     var debug by remember { mutableStateOf(SettingsManager.isDebug(context)) }
+    var modelDir by remember { mutableStateOf(SettingsManager.getModelDir(context) ?: "") }
 
     Column(modifier = Modifier.padding(16.dp)) {
         androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically) {
@@ -32,5 +34,17 @@ fun SettingsScreen() {
             )
             Text(text = "Debug Mode", modifier = Modifier.padding(start = 8.dp))
         }
+
+        TextField(
+            value = modelDir,
+            onValueChange = {
+                modelDir = it
+                SettingsManager.setModelDir(context, it)
+            },
+            label = { Text("Model directory") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 16.dp)
+        )
     }
 }

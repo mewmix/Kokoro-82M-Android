@@ -2,6 +2,7 @@ package com.example.kokoro82m.data
 
 import android.content.Context
 import com.example.kokoro82m.R
+import com.example.kokoro82m.utils.SettingsManager
 import org.json.JSONObject
 
 class ModelManager(private val context: Context) {
@@ -31,7 +32,29 @@ class ModelManager(private val context: Context) {
             val partialFile = java.io.File(modelDir, "${model.id}.task.part")
             model.isDownloaded = modelFile.exists()
             model.hasPartial = !model.isDownloaded && partialFile.exists()
+            model.localPath = if (model.isDownloaded) modelFile.absolutePath else null
             modelList.add(model)
+        }
+
+        SettingsManager.getModelDir(context)?.let { path ->
+            val dir = java.io.File(path)
+            if (dir.exists()) {
+                dir.listFiles { file -> file.extension == "task" || file.extension == "onnx" }?.forEach { file ->
+                    modelList.add(
+                        Model(
+                            id = file.nameWithoutExtension,
+                            name = file.nameWithoutExtension,
+                            description = "External model",
+                            repo = "",
+                            downloadUrl = "",
+                            gated = false,
+                            isDownloaded = true,
+                            hasPartial = false,
+                            localPath = file.absolutePath
+                        )
+                    )
+                }
+            }
         }
         return modelList
     }
@@ -41,10 +64,14 @@ class ModelManager(private val context: Context) {
     }
 
     fun deleteModel(model: Model) {
-        val modelDir = java.io.File(context.filesDir, "models")
-        java.io.File(modelDir, "${model.id}.task").delete()
-        java.io.File(modelDir, "${model.id}.task.part").delete()
+        val internalDir = java.io.File(context.filesDir, "models")
+        if (model.localPath != null && !model.localPath!!.startsWith(internalDir.absolutePath)) {
+            return
+        }
+        java.io.File(internalDir, "${model.id}.task").delete()
+        java.io.File(internalDir, "${model.id}.task.part").delete()
         model.isDownloaded = false
         model.hasPartial = false
+        model.localPath = null
     }
 }

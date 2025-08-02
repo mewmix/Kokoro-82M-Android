@@ -58,7 +58,7 @@ class ChatActivity : ComponentActivity() {
     }
 
     private fun startChat(model: Model) {
-        val modelFile = File(filesDir, "models/${model.id}.task")
+        val modelFile = model.localPath?.let { File(it) } ?: File(filesDir, "models/${model.id}.task")
 
         val llmInference = LlmInference(
             context = applicationContext,

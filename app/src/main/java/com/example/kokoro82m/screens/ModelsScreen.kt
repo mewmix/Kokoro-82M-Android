@@ -118,10 +118,12 @@ fun ModelsScreen(userPreferencesRepository: UserPreferencesRepository) {
                         if (model.isDownloaded) {
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Text("Downloaded")
-                                Button(onClick = {
-                                    DebugLogger.log("ModelsScreen: Deleting ${model.name}")
-                                    modelManager.deleteModel(model)
-                                }) { Text("Delete") }
+                                if (model.localPath?.startsWith(context.filesDir.path) != false) {
+                                    Button(onClick = {
+                                        DebugLogger.log("ModelsScreen: Deleting ${model.name}")
+                                        modelManager.deleteModel(model)
+                                    }) { Text("Delete") }
+                                }
                             }
                         } else if (progress != null) {
                             LinearProgressIndicator(progress = progress, modifier = Modifier.fillMaxWidth())

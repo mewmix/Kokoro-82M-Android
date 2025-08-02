@@ -23,4 +23,11 @@ object SettingsManager {
 
     fun getSpeed(context: Context, default: Float = 1.0f): Float =
         DatabaseManager.getSetting(context, "speed")?.toFloat() ?: default
+
+    fun setModelDir(context: Context, path: String) {
+        DatabaseManager.setSetting(context, "model_dir", path)
+    }
+
+    fun getModelDir(context: Context): String? =
+        DatabaseManager.getSetting(context, "model_dir")
 }

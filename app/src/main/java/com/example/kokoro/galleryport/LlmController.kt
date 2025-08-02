@@ -19,9 +19,8 @@ class LlmController private constructor(val llm: LlmInference) {
                 return null
             }
 
-            val modelFile = File(ctx.filesDir, "models/${model.id}.task")
+            val modelFile = model.localPath?.let { File(it) } ?: File(ctx.filesDir, "models/${model.id}.task")
             if (!modelFile.exists()) return null
-
 
             val opts = LlmInference.LlmInferenceOptions.builder()
                 .setModelPath(modelFile.absolutePath)
