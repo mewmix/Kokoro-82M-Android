@@ -15,7 +15,7 @@ import com.example.kokoro82m.data.ModelManager
 import com.example.kokoro82m.data.Model
 import com.example.kokoro82m.utils.DebugLogger
 import androidx.compose.foundation.layout.Box
-import com.example.kokoro.galleryport.PerfHud
+import com.example.kokoro.chat.PerfHud
 import java.io.File
 
 class ChatActivity : ComponentActivity() {

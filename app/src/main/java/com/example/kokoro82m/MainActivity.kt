@@ -7,7 +7,7 @@ import com.example.kokoro82m.screens.SettingsScreen
 import com.example.kokoro82m.screens.MixerScreen
 import com.example.kokoro82m.screens.MoreScreen
 import com.example.kokoro82m.screens.ModelsScreen
-import com.example.kokoro.galleryport.PerfHud
+import com.example.kokoro.chat.PerfHud
 import ai.onnxruntime.OrtSession
 import android.app.Application
 import android.content.Context

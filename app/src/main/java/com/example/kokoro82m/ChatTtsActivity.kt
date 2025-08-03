@@ -17,7 +17,7 @@ import com.example.kokoro82m.utils.OnnxRuntimeManager
 import com.example.kokoro82m.utils.DebugLogger
 import com.example.kokoro82m.viewmodel.ChatTtsViewModel
 import androidx.compose.foundation.layout.Box
-import com.example.kokoro.galleryport.PerfHud
+import com.example.kokoro.chat.PerfHud
 import java.io.File
 
 class ChatTtsActivity : ComponentActivity() {

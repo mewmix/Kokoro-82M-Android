@@ -14,7 +14,7 @@ import com.example.kokoro82m.utils.StyleLoader
 import com.example.kokoro82m.utils.DebugLogger
 import com.example.kokoro82m.utils.createAudioFromStyleVector
 import com.example.kokoro82m.utils.mixStyles
-import com.example.kokoro.galleryport.PerfHud
+import com.example.kokoro.chat.PerfHud
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
