@@ -3,6 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 <!--    <uses-permission android:name="android.permission.RECORD_AUDIO" />-->
 <!--    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"-->
 <!--        android:maxSdkVersion="32" />-->
@@ -47,6 +48,9 @@
             android:forceDarkAllowed="true"
             android:configChanges="uiMode">
         </activity>
+        <service
+            android:name=".service.BookPlaybackService"
+            android:exported="false" />
     </application>
 
 </manifest>

@@ -3,6 +3,8 @@ package com.example.kokoro82m.utils
 import android.app.Activity
 import android.content.ContentValues
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
@@ -16,7 +18,7 @@ import java.util.Locale
 import java.io.File
 import java.nio.ShortBuffer
 
-fun saveAudio(audioData: FloatArray, context: Context, name: String) {
+fun saveAudio(audioData: FloatArray, context: Context, name: String): Uri? {
     val sampleRate = 22050
 
     val safeName = name.replace(Regex("""[^a-zA-Z0-9_\-]"""), "_")
@@ -44,6 +46,7 @@ fun saveAudio(audioData: FloatArray, context: Context, name: String) {
     val resolver = context.contentResolver
     val uri = resolver.insert(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, contentValues)
 
+    var resultUri: Uri? = null
     uri?.let {
         try {
             resolver.openOutputStream(it)?.use { outputStream: OutputStream ->
@@ -53,6 +56,7 @@ fun saveAudio(audioData: FloatArray, context: Context, name: String) {
                 outputStream.write(byteBuffer.array())
             }
             Log.d("Kokoro", "Audio saved to: $uri")
+            resultUri = it
             (context as? Activity)?.runOnUiThread {
                 Toast.makeText(context, "Audio saved to Music directory", Toast.LENGTH_LONG).show()
             }
@@ -68,6 +72,7 @@ fun saveAudio(audioData: FloatArray, context: Context, name: String) {
             Toast.makeText(context, "Failed to create audio file", Toast.LENGTH_LONG).show()
         }
     }
+    return resultUri
 }
 
 fun saveAudioInternal(audioData: FloatArray, file: java.io.File) {
@@ -100,6 +105,14 @@ fun loadAudioInternal(file: File): FloatArray {
         floats[i++] = data.get().toFloat() / Short.MAX_VALUE
     }
     return floats
+}
+
+fun openAudioFile(context: Context, uri: Uri) {
+    val intent = Intent(Intent.ACTION_VIEW).apply {
+        setDataAndType(uri, "audio/wav")
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    }
+    context.startActivity(Intent.createChooser(intent, "Open with"))
 }
 
 private fun createWavHeader(dataSize: Int, sampleRate: Int): ByteArray {

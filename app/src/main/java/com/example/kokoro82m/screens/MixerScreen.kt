@@ -47,6 +47,7 @@ import com.example.kokoro82m.utils.createAudioFromStyleVector
 import com.example.kokoro82m.utils.mixStyles
 import com.example.kokoro82m.utils.playAudio
 import com.example.kokoro82m.utils.saveAudio
+import com.example.kokoro82m.utils.openAudioFile
 import com.example.kokoro82m.utils.SettingsManager
 import com.example.kokoro82m.utils.DebugLogger
 import com.example.kokoro82m.utils.buildStyleFileName
@@ -240,7 +241,8 @@ private fun generateAudio(
                 session = session
             )
             if (shouldSaveFile && fileName != null) {
-                saveAudio(audio, context, fileName)
+                val uri = saveAudio(audio, context, fileName)
+                uri?.let { openAudioFile(context, it) }
             }
             playAudio(audio, scope) {}
         } catch (e: Exception) {

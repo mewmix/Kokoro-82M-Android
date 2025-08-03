@@ -64,9 +64,11 @@ import com.example.kokoro82m.screens.Acknowledgements
 import com.example.kokoro82m.utils.MainViewModel
 import com.example.kokoro82m.utils.PhonemeConverter
 import com.example.kokoro82m.utils.StyleLoader
+import com.example.kokoro82m.utils.TtsManager
 import com.example.kokoro82m.utils.createAudio
 import com.example.kokoro82m.utils.playAudio
 import com.example.kokoro82m.utils.saveAudio
+import com.example.kokoro82m.utils.openAudioFile
 import com.example.kokoro82m.utils.SettingsManager
 import com.example.kokoro82m.utils.DebugLogger
 import com.google.android.material.color.DynamicColors
@@ -99,6 +101,10 @@ class MainActivity : ComponentActivity() {
 
         val startScreen = screenFromString(intent.getStringExtra(EXTRA_START_SCREEN))
 
+        val styleLoader = StyleLoader(this)
+        TtsManager.phonemeConverter = phonemeConverter
+        TtsManager.styleLoader = styleLoader
+
         setContent {
             KokoroTheme {
                 LaunchedEffect(Unit) {
@@ -107,6 +113,7 @@ class MainActivity : ComponentActivity() {
 
                 val viewModel: MainViewModel = viewModel { MainViewModel(this@MainActivity) }
                 val session = remember { viewModel.getSession() }
+                TtsManager.session = session
 
                 MainScreen(
                     session = session,
@@ -175,7 +182,8 @@ private fun generateAudio(
             )
 
             if (shouldSave) {
-                saveAudio(audioData, context, style)
+                val uri = saveAudio(audioData, context, style)
+                uri?.let { openAudioFile(context, it) }
             }
         } catch (e: Exception) {
             DebugLogger.log("Error: ${e.message}")
