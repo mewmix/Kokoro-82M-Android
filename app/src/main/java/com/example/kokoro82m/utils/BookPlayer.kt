@@ -29,6 +29,7 @@ fun playBook(
     onLineChanged: (Int) -> Unit,
     onFinished: () -> Unit,
     bookmark: Bookmark?,
+    stopAtEachLine: Boolean,
     usePregenerated: Boolean,
 ): Job {
     return scope.launch(Dispatchers.IO) {
@@ -89,8 +90,18 @@ fun playBook(
                 audioPlayer.prepare(audio, position)
                 audioPlayer.playBlocking()
 
-                if (audioPlayer.getState() == PlayerState.PAUSED) {
-                    completed = false
+                if (stopAtEachLine) {
+                    val next = index + 1
+                    withContext(Dispatchers.Main) {
+                        if (next < lines.size) {
+                            onLineChanged(next)
+                        } else {
+                            onLineChanged(-1)
+                        }
+                    }
+                    if (next < lines.size) {
+                        completed = false
+                    }
                     producerJob.cancel()
                     break
                 }
@@ -100,13 +111,11 @@ fun playBook(
             DebugLogger.log("playBook failed: ${e.localizedMessage}")
         } finally {
             withContext(Dispatchers.Main) {
-                if (audioPlayer.getState() != PlayerState.PAUSED) {
+                if (completed) {
                     onLineChanged(-1)
-                    if (completed) {
-                        onFinished()
-                    }
-                    audioPlayer.stop()
+                    onFinished()
                 }
+                audioPlayer.stop()
             }
         }
     }

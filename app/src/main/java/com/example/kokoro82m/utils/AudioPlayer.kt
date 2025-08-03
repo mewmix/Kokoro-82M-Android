@@ -64,65 +64,30 @@ class AudioPlayer(
     fun play() {
         val track = audioTrack ?: return
         val data = pcmData ?: return
-
-        if (currentState == PlayerState.PAUSED) {
-            resume()
-            return
-        }
-
         scope.launch(Dispatchers.IO) {
             DebugLogger.log("AudioPlayer start play from position $position")
             currentState = PlayerState.PLAYING
             track.play()
             track.write(data, position, data.size - position)
-            // Wait for playback to complete if not paused
             while (track.playbackHeadPosition < (data.size - position) / 2 && currentState == PlayerState.PLAYING) {
                 kotlinx.coroutines.delay(10) // Small delay to prevent busy-waiting
             }
-            if (currentState != PlayerState.PAUSED) {
-                stop()
-            }
+            stop()
         }
     }
 
     suspend fun playBlocking() {
         val track = audioTrack ?: return
         val data = pcmData ?: return
-
-        if (currentState == PlayerState.PAUSED) {
-            resume()
-            return
-        }
-
         withContext(Dispatchers.IO) {
             DebugLogger.log("AudioPlayer start play blocking from position $position")
             currentState = PlayerState.PLAYING
             track.play()
             track.write(data, position, data.size - position)
-            // Wait for playback to complete if not paused
             while (track.playbackHeadPosition < (data.size - position) / 2 && currentState == PlayerState.PLAYING && coroutineContext.isActive) {
                 kotlinx.coroutines.delay(10) // Small delay to prevent busy-waiting
             }
-            if (currentState != PlayerState.PAUSED) {
-                stop()
-            }
-        }
-    }
-
-    fun pause() {
-        if (currentState == PlayerState.PLAYING) {
-            position += audioTrack?.playbackHeadPosition ?: 0
-            audioTrack?.pause()
-            currentState = PlayerState.PAUSED
-            DebugLogger.log("AudioPlayer pause at $position")
-        }
-    }
-
-    private fun resume() {
-        if (currentState == PlayerState.PAUSED) {
-            DebugLogger.log("AudioPlayer resume from $position")
-            audioTrack?.play()
-            currentState = PlayerState.PLAYING
+            stop()
         }
     }
 

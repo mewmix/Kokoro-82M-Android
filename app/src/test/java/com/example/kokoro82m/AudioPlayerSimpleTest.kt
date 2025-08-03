@@ -3,12 +3,12 @@ import com.example.kokoro82m.utils.PlayerState
 import android.media.AudioTrack
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
 import org.mockito.Mockito.mock
-import org.mockito.Mockito.`when`
-import android.media.AudioFormat
 class AudioPlayerSimpleTest {
     private lateinit var player: AudioPlayer
     private lateinit var audioTrack: AudioTrack
@@ -29,27 +29,11 @@ class AudioPlayerSimpleTest {
     }
 
     @Test
-    fun pauseFromPlaying() {
-        val stateField = AudioPlayer::class.java.getDeclaredField("currentState")
-        stateField.isAccessible = true
-        stateField.set(player, PlayerState.PLAYING)
-        `when`(audioTrack.playbackHeadPosition).thenReturn(50)
-
-        player.pause()
-
-        assertEquals(PlayerState.PAUSED, player.getState())
-        assertEquals(50, player.getPosition())
-    }
-
-    @Test
-    fun playResumesFromPaused() {
-        val stateField = AudioPlayer::class.java.getDeclaredField("currentState")
-        stateField.isAccessible = true
-        stateField.set(player, PlayerState.PAUSED)
-
+    fun playStartsPlayback() = runBlocking {
         player.play()
-
+        delay(50)
         assertEquals(PlayerState.PLAYING, player.getState())
+        player.stop()
     }
 
     @Test

@@ -22,6 +22,7 @@ object DatabaseManager {
             put(DatabaseHelper.COLUMN_MODE, project.mode.name)
             put(DatabaseHelper.COLUMN_SPEED, project.speed)
             put(DatabaseHelper.COLUMN_USE_PREGENERATED, if (project.usePregenerated) 1 else 0)
+            put(DatabaseHelper.COLUMN_STOP_AT_LINE, if (project.stopAtEachLine) 1 else 0)
             project.audioPath?.let { put(DatabaseHelper.COLUMN_AUDIO_PATH, it) }
             project.bookmark?.let {
                 put(DatabaseHelper.COLUMN_BOOKMARK_LINE, it.line)
@@ -65,8 +66,10 @@ object DatabaseManager {
             val audioPath = if (audioPathIndex != -1) cursor.getString(audioPathIndex) else null
             val usePregeneratedIdx = cursor.getColumnIndex(DatabaseHelper.COLUMN_USE_PREGENERATED)
             val usePregenerated = if (usePregeneratedIdx != -1) cursor.getInt(usePregeneratedIdx) == 1 else false
+            val stopAtLineIdx = cursor.getColumnIndex(DatabaseHelper.COLUMN_STOP_AT_LINE)
+            val stopAtLine = if (stopAtLineIdx != -1) cursor.getInt(stopAtLineIdx) == 1 else false
 
-            project = Project(uri, name, styles, weights, mode, speed, bookmark, audioPath, usePregenerated)
+            project = Project(uri, name, styles, weights, mode, speed, bookmark, audioPath, usePregenerated, stopAtLine)
         }
 
         cursor.close()
@@ -98,7 +101,9 @@ object DatabaseManager {
             val audioPath = if (audioPathIndex != -1) cursor.getString(audioPathIndex) else null
             val usePregeneratedIdx = cursor.getColumnIndex(DatabaseHelper.COLUMN_USE_PREGENERATED)
             val usePregenerated = if (usePregeneratedIdx != -1) cursor.getInt(usePregeneratedIdx) == 1 else false
-            projects.add(Project(uri, name, styles, weights, mode, speed, bookmark, audioPath, usePregenerated))
+            val stopAtLineIdx = cursor.getColumnIndex(DatabaseHelper.COLUMN_STOP_AT_LINE)
+            val stopAtLine = if (stopAtLineIdx != -1) cursor.getInt(stopAtLineIdx) == 1 else false
+            projects.add(Project(uri, name, styles, weights, mode, speed, bookmark, audioPath, usePregenerated, stopAtLine))
         }
         cursor.close()
         db.close()

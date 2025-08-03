@@ -8,7 +8,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
 
     companion object {
         private const val DATABASE_NAME = "kokoro.db"
-        private const val DATABASE_VERSION = 3
+        private const val DATABASE_VERSION = 4
         const val TABLE_PROJECTS = "projects"
         const val COLUMN_ID = "_id"
         const val COLUMN_URI = "uri"
@@ -21,6 +21,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         const val COLUMN_BOOKMARK_POSITION = "bookmark_position"
         const val COLUMN_AUDIO_PATH = "audio_path"
         const val COLUMN_USE_PREGENERATED = "use_pregenerated"
+        const val COLUMN_STOP_AT_LINE = "stop_at_line"
 
         const val TABLE_AUDIO_LINES = "audio_lines"
         const val COLUMN_LINE_INDEX = "line_index"
@@ -43,7 +44,8 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                 "$COLUMN_BOOKMARK_LINE INTEGER," +
                 "$COLUMN_BOOKMARK_POSITION INTEGER," +
                 "$COLUMN_AUDIO_PATH TEXT," +
-                "$COLUMN_USE_PREGENERATED INTEGER)"
+                "$COLUMN_USE_PREGENERATED INTEGER," +
+                "$COLUMN_STOP_AT_LINE INTEGER)"
         db.execSQL(createProjectsTable)
 
         val createAudioLinesTable = "CREATE TABLE $TABLE_AUDIO_LINES (" +

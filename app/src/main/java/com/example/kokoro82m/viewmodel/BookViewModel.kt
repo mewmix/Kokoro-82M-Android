@@ -70,6 +70,7 @@ class BookViewModel : ViewModel() {
         bookUri: Uri?,
         context: Context,
         bookmark: Bookmark?,
+        stopAtEachLine: Boolean,
         usePregenerated: Boolean,
         onFinished: () -> Unit,
     ) {
@@ -91,6 +92,7 @@ class BookViewModel : ViewModel() {
             onLineChanged = { setCurrentLine(it) },
             onFinished = onFinished,
             bookmark = bookmark,
+            stopAtEachLine = stopAtEachLine,
             usePregenerated = usePregenerated,
         )
     }

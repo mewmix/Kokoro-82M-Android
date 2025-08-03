@@ -12,4 +12,5 @@ data class Project(
     val bookmark: Bookmark?,
     val audioPath: String? = null,
     val usePregenerated: Boolean = false,
+    val stopAtEachLine: Boolean = false,
 )
