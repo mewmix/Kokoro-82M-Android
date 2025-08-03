@@ -110,7 +110,8 @@ class ChatTtsViewModel(
 
     private fun processSentences(builder: StringBuilder, done: Boolean) {
         var text = builder.toString()
-        val regex = Regex("[.!?]")
+        // Treat consecutive punctuation as a single delimiter and also split on newlines
+        val regex = Regex("[.!?]+|\n")
         var match = regex.find(text)
         while (match != null) {
             val end = match.range.last + 1
