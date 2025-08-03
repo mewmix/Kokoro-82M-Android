@@ -19,6 +19,14 @@ class ChatViewModel(private val llmInference: LlmInference) : ViewModel() {
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
+    private val _config = MutableStateFlow(ModelConfig())
+    val config: StateFlow<ModelConfig> = _config.asStateFlow()
+
+    fun updateConfig(newConfig: ModelConfig) {
+        _config.value = newConfig
+        llmInference.updateConfig(newConfig)
+    }
+
     fun sendMessage(message: String) {
         DebugLogger.log("ChatViewModel sendMessage: $message")
         _chatState.value = _chatState.value + ChatMessage(message, true)

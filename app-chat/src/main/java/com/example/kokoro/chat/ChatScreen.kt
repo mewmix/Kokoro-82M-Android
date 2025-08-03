@@ -27,6 +27,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -46,6 +47,8 @@ fun ChatScreen(
 ) {
     val chatState by viewModel.chatState.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    val config by viewModel.config.collectAsState()
+    var showSettings by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf("") }
 
     Scaffold(
@@ -55,6 +58,11 @@ fun ChatScreen(
                 navigationIcon = {
                     IconButton(onClick = onBackPressed) {
                         Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { showSettings = true }) {
+                        Icon(Icons.Filled.Settings, contentDescription = "Settings")
                     }
                 }
             )
@@ -115,6 +123,17 @@ fun ChatScreen(
                 }
             }
         }
+    }
+
+    if (showSettings) {
+        ModelConfigDialog(
+            config = config,
+            onDismiss = { showSettings = false },
+            onApply = {
+                viewModel.updateConfig(it)
+                showSettings = false
+            }
+        )
     }
 }
 

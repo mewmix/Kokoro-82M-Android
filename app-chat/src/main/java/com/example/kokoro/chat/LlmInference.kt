@@ -15,7 +15,8 @@ import java.io.FileOutputStream
 
 class LlmInference(
     private val context: Context,
-    private val modelPath: String
+    private val modelPath: String,
+    private var config: ModelConfig = ModelConfig()
 ) {
 
     private var llmInference: LlmInference? = null
@@ -24,9 +25,19 @@ class LlmInference(
         DebugLogger.log("LlmInference initialize with model $modelPath")
         val options = LlmInferenceOptions.builder()
             .setModelPath(modelPath)
+            .setTemperature(config.temperature)
+            .setTopK(config.topK)
+            .setTopP(config.topP)
+            .setMaxTokens(config.maxTokens)
             .build()
 
         llmInference = LlmInference.createFromOptions(context, options)
+    }
+
+    fun updateConfig(newConfig: ModelConfig) {
+        config = newConfig
+        llmInference?.close()
+        initialize()
     }
 
     fun sendMessage(prompt: String, resultListener: (partialResult: String, done: Boolean) -> Unit) {

@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import ai.onnxruntime.OrtSession
 import com.example.kokoro.chat.ChatMessage
 import com.example.kokoro.chat.LlmInference
+import com.example.kokoro.chat.ModelConfig
 import com.example.kokoro82m.utils.AudioPlayer
 import com.example.kokoro82m.utils.InterpolationMode
 import com.example.kokoro82m.utils.PhonemeConverter
@@ -61,8 +62,16 @@ class ChatTtsViewModel(
     private val _speed = MutableStateFlow(1.0f)
     val speed = _speed.asStateFlow()
 
+    private val _config = MutableStateFlow(ModelConfig())
+    val config = _config.asStateFlow()
+
     init {
         llmInference.initialize()
+    }
+
+    fun updateConfig(newConfig: ModelConfig) {
+        _config.value = newConfig
+        llmInference.updateConfig(newConfig)
     }
 
     fun sendMessage(message: String) {

@@ -18,6 +18,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -41,6 +42,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.kokoro.chat.MessageBubble
+import com.example.kokoro.chat.ModelConfigDialog
 import com.example.kokoro82m.utils.PlayerState
 import com.example.kokoro82m.viewmodel.ChatTtsViewModel
 
@@ -60,6 +62,8 @@ fun ChatTtsScreen(
     val weights by viewModel.weights.collectAsState()
     val interpolationMode by viewModel.interpolationMode.collectAsState()
     val speed by viewModel.speed.collectAsState()
+    val config by viewModel.config.collectAsState()
+    var showSettings by remember { mutableStateOf(false) }
 
     var message by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
@@ -77,6 +81,11 @@ fun ChatTtsScreen(
                 navigationIcon = {
                     IconButton(onClick = onBackPressed) {
                         Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { showSettings = true }) {
+                        Icon(Icons.Filled.Settings, contentDescription = "Settings")
                     }
                 }
             )
@@ -200,5 +209,16 @@ fun ChatTtsScreen(
                 }
             }
         }
+    }
+
+    if (showSettings) {
+        ModelConfigDialog(
+            config = config,
+            onDismiss = { showSettings = false },
+            onApply = {
+                viewModel.updateConfig(it)
+                showSettings = false
+            }
+        )
     }
 }
