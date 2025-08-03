@@ -25,7 +25,7 @@ object DatabaseManager {
             project.audioPath?.let { put(DatabaseHelper.COLUMN_AUDIO_PATH, it) }
             project.bookmark?.let {
                 put(DatabaseHelper.COLUMN_BOOKMARK_LINE, it.line)
-                put(DatabaseHelper.COLUMN_BOOKMARK_POSITION, it.position)
+                put(DatabaseHelper.COLUMN_BOOKMARK_POSITION, 0)
             }
         }
 
@@ -59,8 +59,7 @@ object DatabaseManager {
             val mode = InterpolationMode.valueOf(cursor.getString(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_MODE)))
             val speed = cursor.getFloat(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_SPEED))
             val bookmarkLine = cursor.getInt(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_BOOKMARK_LINE))
-            val bookmarkPosition = cursor.getInt(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_BOOKMARK_POSITION))
-            val bookmark = if (bookmarkLine != -1) Bookmark(bookmarkLine, bookmarkPosition) else null
+            val bookmark = if (bookmarkLine != -1) Bookmark(bookmarkLine) else null
             val audioPathIndex = cursor.getColumnIndex(DatabaseHelper.COLUMN_AUDIO_PATH)
             val audioPath = if (audioPathIndex != -1) cursor.getString(audioPathIndex) else null
             val usePregeneratedIdx = cursor.getColumnIndex(DatabaseHelper.COLUMN_USE_PREGENERATED)
@@ -92,8 +91,7 @@ object DatabaseManager {
             val mode = InterpolationMode.valueOf(cursor.getString(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_MODE)))
             val speed = cursor.getFloat(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_SPEED))
             val bookmarkLine = cursor.getInt(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_BOOKMARK_LINE))
-            val bookmarkPosition = cursor.getInt(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_BOOKMARK_POSITION))
-            val bookmark = if (bookmarkLine != -1) Bookmark(bookmarkLine, bookmarkPosition) else null
+            val bookmark = if (bookmarkLine != -1) Bookmark(bookmarkLine) else null
             val audioPathIndex = cursor.getColumnIndex(DatabaseHelper.COLUMN_AUDIO_PATH)
             val audioPath = if (audioPathIndex != -1) cursor.getString(audioPathIndex) else null
             val usePregeneratedIdx = cursor.getColumnIndex(DatabaseHelper.COLUMN_USE_PREGENERATED)
@@ -117,12 +115,12 @@ object DatabaseManager {
         }
     }
 
-    fun setBookmark(context: Context, uri: String, line: Int, position: Int) {
+    fun setBookmark(context: Context, uri: String, line: Int) {
         val dbHelper = DatabaseHelper(context)
         val db = dbHelper.writableDatabase
         val values = ContentValues().apply {
             put(DatabaseHelper.COLUMN_BOOKMARK_LINE, line)
-            put(DatabaseHelper.COLUMN_BOOKMARK_POSITION, position)
+            put(DatabaseHelper.COLUMN_BOOKMARK_POSITION, 0)
         }
         db.update(DatabaseHelper.TABLE_PROJECTS, values, "${DatabaseHelper.COLUMN_URI} = ?", arrayOf(uri))
         db.close()
@@ -133,7 +131,7 @@ object DatabaseManager {
         val db = dbHelper.readableDatabase
         val cursor = db.query(
             DatabaseHelper.TABLE_PROJECTS,
-            arrayOf(DatabaseHelper.COLUMN_BOOKMARK_LINE, DatabaseHelper.COLUMN_BOOKMARK_POSITION),
+            arrayOf(DatabaseHelper.COLUMN_BOOKMARK_LINE),
             "${DatabaseHelper.COLUMN_URI} = ?",
             arrayOf(uri),
             null,
@@ -144,9 +142,8 @@ object DatabaseManager {
         var bookmark: Bookmark? = null
         if (cursor.moveToFirst()) {
             val bookmarkLine = cursor.getInt(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_BOOKMARK_LINE))
-            val bookmarkPosition = cursor.getInt(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_BOOKMARK_POSITION))
             if (bookmarkLine != -1) {
-                bookmark = Bookmark(bookmarkLine, bookmarkPosition)
+                bookmark = Bookmark(bookmarkLine)
             }
         }
 
