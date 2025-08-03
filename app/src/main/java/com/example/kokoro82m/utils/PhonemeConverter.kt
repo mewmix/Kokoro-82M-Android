@@ -67,8 +67,9 @@ class PhonemeConverter(context: Context) {
         println("normalText: $normalizedText")
 
 
-        val wordsAndPunctuation =
-            normalizedText.split(Regex("(?<=\\W)|(?=\\W)")).filter { it.isNotBlank() }
+        val wordsAndPunctuation = normalizedText
+            .split(Regex("(?<=[^\\p{L}\\p{N}'])|(?=[^\\p{L}\\p{N}'])"))
+            .filter { it.isNotBlank() }
 
 
         val phonemes = StringBuilder()
