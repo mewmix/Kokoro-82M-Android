@@ -12,6 +12,7 @@ import com.example.kokoro82m.utils.PhonemeConverter
 import com.example.kokoro82m.utils.PlayerState
 import com.example.kokoro82m.utils.StyleLoader
 import com.example.kokoro82m.utils.playBook
+import com.example.kokoro82m.utils.readEpubLines
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -42,13 +43,19 @@ class BookViewModel : ViewModel() {
     fun loadBook(context: Context, uri: Uri) {
         _bookUri.value = uri
         viewModelScope.launch(Dispatchers.IO) {
-            val text = try {
-                context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
+            val mime = context.contentResolver.getType(uri) ?: ""
+            val lines = try {
+                if (mime == "application/epub+zip" || uri.toString().endsWith(".epub", true)) {
+                    readEpubLines(context, uri)
+                } else {
+                    val text = context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() } ?: ""
+                    text.lines()
+                }
             } catch (e: Exception) {
-                null
-            } ?: ""
+                emptyList()
+            }
             withContext(Dispatchers.Main) {
-                _lines.value = text.lines()
+                _lines.value = lines
             }
         }
     }

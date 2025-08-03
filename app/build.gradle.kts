@@ -79,6 +79,8 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.1")
     implementation(libs.material3)
     implementation("com.github.medavox:IPA-Transcribers:v0.2")
+    implementation(libs.readium.shared)
+    implementation(libs.readium.streamer)
 
     val lifecycle_version = "2.8.7"
     val arch_version = "2.2.0"
