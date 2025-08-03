@@ -11,6 +11,7 @@ import com.example.kokoro82m.utils.InterpolationMode
 import com.example.kokoro82m.utils.PhonemeConverter
 import com.example.kokoro82m.utils.PlayerState
 import com.example.kokoro82m.utils.StyleLoader
+import com.example.kokoro82m.utils.TextFileReader
 import com.example.kokoro82m.utils.playBook
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -43,12 +44,12 @@ class BookViewModel : ViewModel() {
         _bookUri.value = uri
         viewModelScope.launch(Dispatchers.IO) {
             val text = try {
-                context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
+                TextFileReader.read(context, uri)
             } catch (e: Exception) {
                 null
             } ?: ""
             withContext(Dispatchers.Main) {
-                _lines.value = text.lines()
+                _lines.value = text.lineSequence().toList()
             }
         }
     }

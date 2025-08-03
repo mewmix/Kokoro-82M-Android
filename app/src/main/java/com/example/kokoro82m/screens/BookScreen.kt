@@ -271,7 +271,7 @@ fun BookScreen(
                 horizontalArrangement = Arrangement.spacedBy(dimensionResource(id = R.dimen.padding_small)),
                 maxItemsInEachRow = 3
             ) {
-                Button(onClick = { launcher.launch(arrayOf("text/plain")) }) {
+                Button(onClick = { launcher.launch(arrayOf("text/*", "application/epub+zip")) }) {
                     Text("Open")
                 }
                 Button(
