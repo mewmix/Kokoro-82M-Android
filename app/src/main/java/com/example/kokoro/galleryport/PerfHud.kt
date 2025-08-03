@@ -21,6 +21,10 @@ object PerfHud {
         return result!!
     }
 
+    fun recordValue(label: String, ms: Float) {
+        stats[label] = ms
+    }
+
     @Composable
     fun Overlay() {
         Column(Modifier.padding(6.dp)) {

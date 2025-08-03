@@ -16,6 +16,8 @@ import com.example.kokoro82m.screens.ChatTtsScreen
 import com.example.kokoro82m.utils.OnnxRuntimeManager
 import com.example.kokoro82m.utils.DebugLogger
 import com.example.kokoro82m.viewmodel.ChatTtsViewModel
+import androidx.compose.foundation.layout.Box
+import com.example.kokoro.galleryport.PerfHud
 import java.io.File
 
 class ChatTtsActivity : ComponentActivity() {
@@ -80,7 +82,10 @@ class ChatTtsActivity : ComponentActivity() {
 
         setContent {
             KokoroTheme {
-                ChatTtsScreen(viewModel = viewModel, modelName = model.name, onBackPressed = { finish() })
+                Box {
+                    ChatTtsScreen(viewModel = viewModel, modelName = model.name, onBackPressed = { finish() })
+                    PerfHud.Overlay()
+                }
             }
         }
     }

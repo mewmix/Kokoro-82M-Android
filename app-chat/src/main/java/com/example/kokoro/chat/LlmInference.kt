@@ -5,6 +5,7 @@ import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import com.google.mediapipe.tasks.genai.llminference.LlmInference.LlmInferenceOptions
 import java.io.File
 import com.example.kokoro82m.utils.DebugLogger
+import com.example.kokoro.galleryport.PerfHud
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -35,7 +36,14 @@ class LlmInference(
         }
 
         DebugLogger.log("LlmInference sendMessage: $prompt")
-        llmInference?.generateResponseAsync(prompt, resultListener)
+        val start = System.nanoTime()
+        llmInference?.generateResponseAsync(prompt) { partial, done ->
+            if (done) {
+                val ms = (System.nanoTime() - start) / 1e6f
+                PerfHud.recordValue("LLM", ms)
+            }
+            resultListener(partial, done)
+        }
     }
 
     fun close() {

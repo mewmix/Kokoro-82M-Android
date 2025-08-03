@@ -14,6 +14,7 @@ import com.example.kokoro82m.utils.StyleLoader
 import com.example.kokoro82m.utils.DebugLogger
 import com.example.kokoro82m.utils.createAudioFromStyleVector
 import com.example.kokoro82m.utils.mixStyles
+import com.example.kokoro.galleryport.PerfHud
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -99,21 +100,23 @@ class ChatTtsViewModel(
             try {
                 // Perform all heavy computations on a background thread
                 val audioData = withContext(Dispatchers.IO) {
-                    val mixedVector = mixStyles(
-                        styleLoader,
-                        _selectedStyles.value,
-                        _weights.value,
-                        _interpolationMode.value
-                    )
-                    val phonemes = phonemeConverter.phonemize(text)
+                    PerfHud.record("TTS") {
+                        val mixedVector = mixStyles(
+                            styleLoader,
+                            _selectedStyles.value,
+                            _weights.value,
+                            _interpolationMode.value
+                        )
+                        val phonemes = phonemeConverter.phonemize(text)
 
-                    val (data, _) = createAudioFromStyleVector(
-                        phonemes = phonemes,
-                        voice = mixedVector,
-                        speed = _speed.value,
-                        session = ortSession
-                    )
-                    data // Return the resulting audio data
+                        val (data, _) = createAudioFromStyleVector(
+                            phonemes = phonemes,
+                            voice = mixedVector,
+                            speed = _speed.value,
+                            session = ortSession
+                        )
+                        data // Return the resulting audio data
+                    }
                 }
 
                 // Switch back to the main thread to update UI and play audio
