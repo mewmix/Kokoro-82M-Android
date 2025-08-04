@@ -5,7 +5,6 @@ import org.jetbrains.bio.npy.NpyArray
 import org.jetbrains.bio.npy.NpyFile
 import java.io.File
 import java.io.FileOutputStream
-import java.io.InputStream
 
 
 class StyleLoader(private val context: Context) {
@@ -20,20 +19,24 @@ class StyleLoader(private val context: Context) {
         }
 
         val npyArray: NpyArray = NpyFile.read(tempFile.toPath())
+        val shape = npyArray.shape
 
-        if (npyArray.shape.size != 3 || npyArray.shape[0] != 511 || npyArray.shape[1] != 1 || npyArray.shape[2] != 256) {
-            throw IllegalArgumentException("The loaded .npy file must have the shape (511, 1, 256)")
+        if (shape.isEmpty() || shape.last() != 256) {
+            throw IllegalArgumentException("The loaded .npy file must have a shape compatible with (*, ..., 256)")
         }
 
-        if (index < 0 || index >= 511) {
-            throw IllegalArgumentException("Index must be between 0 and 510")
+        val frameCount = shape[0]
+        if (index < 0 || index >= frameCount) {
+            throw IllegalArgumentException("Index must be between 0 and ${'$'}{frameCount - 1}")
         }
 
-        val styleArray = Array(1) { FloatArray(256) }
+        val blockSize = shape.copyOfRange(1, shape.size).fold(1) { acc, dim -> acc * dim }
         val floatArray = npyArray.asFloatArray()
+        val styleArray = Array(1) { FloatArray(256) }
+        val offset = index * blockSize
 
         for (i in 0 until 256) {
-            styleArray[0][i] = floatArray[index * 256 + i]
+            styleArray[0][i] = floatArray[offset + i]
         }
 
         return styleArray
