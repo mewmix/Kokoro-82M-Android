@@ -52,6 +52,9 @@ dependencies {
     implementation("com.google.mediapipe:tasks-genai:latest.release")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
+    implementation("org.readium.kotlin-toolkit:readium-streamer:3.1.1")
+    implementation("org.readium.kotlin-toolkit:readium-shared:3.1.1")
+    implementation("org.readium.kotlin-toolkit:readium-adapter-pdfium:3.1.1")
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

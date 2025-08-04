@@ -17,6 +17,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.readium.adapter.pdfium.document.PdfiumDocumentFactory
+import org.readium.r2.shared.ExperimentalReadiumApi
+import org.readium.r2.shared.publication.services.content.Content
+import org.readium.r2.shared.util.asset.AssetRetriever
+import org.readium.r2.shared.util.http.DefaultHttpClient
+import org.readium.r2.shared.util.toAbsoluteUrl
+import org.readium.r2.streamer.PublicationOpener
+import org.readium.r2.streamer.parser.DefaultPublicationParser
 
 class BookViewModel : ViewModel() {
     private val _bookUri = MutableStateFlow<Uri?>(null)
@@ -38,14 +46,40 @@ class BookViewModel : ViewModel() {
 
     private var playJob: Job? = null
 
+    @OptIn(ExperimentalReadiumApi::class)
     fun loadBook(context: Context, uri: Uri) {
         _bookUri.value = uri
         viewModelScope.launch(Dispatchers.IO) {
-            val text = try {
-                context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
-            } catch (e: Exception) {
-                null
-            } ?: ""
+            val httpClient = DefaultHttpClient()
+            val assetRetriever = AssetRetriever(context.contentResolver, httpClient)
+            val asset = uri.toAbsoluteUrl()?.let { assetRetriever.retrieve(it).getOrNull() }
+
+            val text = asset?.let {
+                val publication = PublicationOpener(
+                    DefaultPublicationParser(
+                        context = context,
+                        httpClient = httpClient,
+                        assetRetriever = assetRetriever,
+                        pdfFactory = PdfiumDocumentFactory(context),
+                    ),
+                ).open(it, allowUserInteraction = false).getOrNull()
+
+                val content = publication?.content()
+                buildString {
+                    content?.forEach { element ->
+                        val line = (element as? Content.TextualElement)?.text
+                        if (!line.isNullOrBlank()) {
+                            append(line).append('\n')
+                        }
+                    }
+                }
+            }
+                ?: try {
+                    context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
+                } catch (e: Exception) {
+                    null
+                } ?: ""
+
             withContext(Dispatchers.Main) {
                 _lines.value = text.lines()
             }
