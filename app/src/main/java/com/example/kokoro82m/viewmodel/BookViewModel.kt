@@ -6,9 +6,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import ai.onnxruntime.OrtSession
 import com.example.kokoro82m.utils.AudioPlayer
+import com.example.kokoro82m.utils.AudioPlayerManager
 import com.example.kokoro82m.utils.InterpolationMode
 import com.example.kokoro82m.utils.PhonemeConverter
 import com.example.kokoro82m.utils.PlayerState
+import com.example.kokoro82m.utils.PlaybackNotification
 import com.example.kokoro82m.utils.StyleLoader
 import com.example.kokoro82m.utils.playBook
 import kotlinx.coroutines.Dispatchers
@@ -31,9 +33,14 @@ class BookViewModel : ViewModel() {
     private val _playerState = MutableStateFlow(PlayerState.IDLE)
     val playerState = _playerState.asStateFlow()
 
+    private var appContext: Context? = null
+
     val audioPlayer = AudioPlayer(
         scope = viewModelScope,
-        onStateChanged = { _playerState.value = it }
+        onStateChanged = { state ->
+            _playerState.value = state
+            appContext?.let { PlaybackNotification.update(it, state) }
+        }
     )
 
     private var playJob: Job? = null
@@ -72,6 +79,9 @@ class BookViewModel : ViewModel() {
         onFinished: () -> Unit,
     ) {
         playJob?.cancel()
+        appContext = context.applicationContext
+        AudioPlayerManager.player = audioPlayer
+        PlaybackNotification.show(appContext!!, true)
         playJob = playBook(
             scope = viewModelScope,
             session = session,
@@ -96,5 +106,7 @@ class BookViewModel : ViewModel() {
         playJob?.cancel()
         playJob = null
         audioPlayer.stop()
+        appContext?.let { PlaybackNotification.cancel(it) }
+        AudioPlayerManager.player = null
     }
 }

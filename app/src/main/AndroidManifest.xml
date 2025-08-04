@@ -47,6 +47,10 @@
             android:forceDarkAllowed="true"
             android:configChanges="uiMode">
         </activity>
+
+        <receiver
+            android:name=".utils.PlaybackReceiver"
+            android:exported="false" />
     </application>
 
 </manifest>
