@@ -4,15 +4,24 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.CloudDownload
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import com.example.kokoro82m.ui.components.ProgressDialog
@@ -63,7 +72,7 @@ fun ModelsScreen(userPreferencesRepository: UserPreferencesRepository) {
             title = { Text("Hugging Face Token") },
             text = {
                 Column {
-                    Text("This model is gated. Please enter your Hugging Face token to download.")
+                    Text("This model is gated. Please enter your Hugging Face token and ensure you have accepted the EULA to download.")
                     TextField(
                         value = hfToken,
                         onValueChange = {
@@ -105,29 +114,33 @@ fun ModelsScreen(userPreferencesRepository: UserPreferencesRepository) {
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             items(models) { model ->
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column {
-                        Text(text = model.name, style = androidx.compose.material3.MaterialTheme.typography.titleMedium)
-                        Text(text = model.description, style = androidx.compose.material3.MaterialTheme.typography.bodyMedium)
-                    }
-                    Column {
-                        val progress = progressMap[model.id]
-                        if (model.isDownloaded) {
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Text("Downloaded")
-                                Button(onClick = {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Text(text = model.name, style = MaterialTheme.typography.titleMedium)
+                    Text(text = model.description, style = MaterialTheme.typography.bodyMedium)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    val progress = progressMap[model.id]
+                    if (progress != null) {
+                        LinearProgressIndicator(progress = progress, modifier = Modifier.fillMaxWidth())
+                    } else {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            if (model.isDownloaded) {
+                                Icon(
+                                    imageVector = Icons.Filled.CheckCircle,
+                                    contentDescription = "Downloaded",
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                                IconButton(onClick = {
                                     DebugLogger.log("ModelsScreen: Deleting ${model.name}")
                                     modelManager.deleteModel(model)
-                                }) { Text("Delete") }
-                            }
-                        } else if (progress != null) {
-                            LinearProgressIndicator(progress = progress, modifier = Modifier.fillMaxWidth())
-                        } else {
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Button(onClick = {
+                                }) {
+                                    Icon(Icons.Filled.Delete, contentDescription = "Delete model")
+                                }
+                            } else {
+                                IconButton(onClick = {
                                     if (model.gated) {
                                         selectedModel = model
                                         showDialog = true
@@ -137,13 +150,18 @@ fun ModelsScreen(userPreferencesRepository: UserPreferencesRepository) {
                                         modelDownloader.downloadModel(model)
                                     }
                                 }) {
-                                    Text(if (model.hasPartial) "Resume" else "Download")
+                                    Icon(
+                                        Icons.Filled.CloudDownload,
+                                        contentDescription = if (model.hasPartial) "Resume download" else "Download model"
+                                    )
                                 }
                                 if (model.hasPartial) {
-                                    Button(onClick = {
+                                    IconButton(onClick = {
                                         DebugLogger.log("ModelsScreen: Deleting partial ${model.name}")
                                         modelManager.deleteModel(model)
-                                    }) { Text("Delete") }
+                                    }) {
+                                        Icon(Icons.Filled.Delete, contentDescription = "Delete partial model")
+                                    }
                                 }
                             }
                         }
