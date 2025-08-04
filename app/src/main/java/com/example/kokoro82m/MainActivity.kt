@@ -402,8 +402,16 @@ fun BasicScreen(
     viewModel: MainViewModel
 ) {
     val context = LocalContext.current
+    val styleLoader = remember { StyleLoader(context) }
+    val names = styleLoader.names.sorted()
+
     var text by remember { mutableStateOf("This is her warm heart, her warmest kokoro, unwavering love and comfort.") }
-    var style by remember { mutableStateOf(SettingsManager.getStyle(context)) }
+    var style by remember {
+        mutableStateOf(
+            SettingsManager.getStyle(context).takeIf { it in names }
+                ?: names.firstOrNull().orEmpty()
+        )
+    }
     var speed by remember { mutableFloatStateOf(SettingsManager.getSpeed(context)) }
     var isProcessing by remember { mutableStateOf(false) }
     var shouldSaveFile by remember { mutableStateOf(false) }
@@ -419,19 +427,6 @@ fun BasicScreen(
         }
     }
 
-    val names = listOf(
-        "af",
-        "af_bella",
-        "af_nicole",
-        "af_sarah",
-        "af_sky",
-        "am_adam",
-        "am_michael",
-        "bf_emma",
-        "bf_isabella",
-        "bm_george",
-        "bm_lewis"
-    )
     var expanded by remember { mutableStateOf(false) }
     var modelExpanded by remember { mutableStateOf(false) }
 
