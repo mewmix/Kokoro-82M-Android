@@ -26,6 +26,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.kokoro82m.R
+import com.example.kokoro82m.BookForegroundService
 import com.example.kokoro82m.utils.*
 import com.example.kokoro82m.ui.components.ProgressDialog
 import com.example.kokoro82m.viewmodel.BookViewModel
@@ -279,7 +280,7 @@ fun BookScreen(
                 Button(
                     onClick = {
                         if (playerState == PlayerState.PLAYING) {
-                            bookViewModel.audioPlayer.pause()
+                            BookForegroundService.pause(context)
                             bookUri?.let {
                                 DebugLogger.log("Saving bookmark at line $currentLine")
                                 BookmarkManager.save(context, it.toString(), currentLine)
@@ -297,10 +298,9 @@ fun BookScreen(
                                 bookmark = Bookmark(currentLine)
                             }
                         } else {
-                            if (playerState == PlayerState.PAUSED) {
-                                bookViewModel.audioPlayer.stop()
-                            }
-                            bookViewModel.startPlayback(
+                            BookForegroundService.startService(
+                                context = context,
+                                bookViewModel = bookViewModel,
                                 session = session,
                                 phonemeConverter = phonemeConverter,
                                 styleLoader = styleLoader,
@@ -311,7 +311,6 @@ fun BookScreen(
                                 lines = lines,
                                 startLine = currentLine.coerceAtLeast(0),
                                 bookUri = bookUri,
-                                context = context,
                                 usePregenerated = usePregenerated,
                                 onFinished = {
                                     bookUri?.let { u -> BookmarkManager.clear(context, u.toString()) }
@@ -332,7 +331,7 @@ fun BookScreen(
                 }
                 Button(
                     onClick = {
-                        bookViewModel.stopPlayback()
+                        BookForegroundService.stop(context)
                     },
                     enabled = playerState != PlayerState.IDLE
                 ) {
