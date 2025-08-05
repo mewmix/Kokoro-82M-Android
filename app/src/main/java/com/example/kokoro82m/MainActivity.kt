@@ -12,6 +12,7 @@ import ai.onnxruntime.OrtSession
 import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -115,10 +116,18 @@ private fun showPlaybackNotification(context: Context) {
         manager.createNotificationChannel(channel)
     }
 
+    val contentIntent = PendingIntent.getActivity(
+        context,
+        0,
+        Intent(context, MainActivity::class.java),
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+    )
+
     val notification = NotificationCompat.Builder(context, PLAYBACK_CHANNEL_ID)
         .setSmallIcon(android.R.drawable.ic_media_play)
         .setContentTitle("Playback")
         .setContentText("Audio playback in progress")
+        .setContentIntent(contentIntent)
         .setOngoing(true)
         .build()
 

@@ -8,6 +8,7 @@ import android.content.Intent
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import com.example.kokoro82m.MainActivity
 
 object PlaybackNotification {
     private const val CHANNEL_ID = "book_playback_channel"
@@ -31,12 +32,20 @@ object PlaybackNotification {
         NotificationManagerCompat.from(context).cancel(NOTIFICATION_ID)
     }
 
-    private fun buildNotification(context: Context, playing: Boolean) =
-        NotificationCompat.Builder(context, CHANNEL_ID)
+    private fun buildNotification(context: Context, playing: Boolean): android.app.Notification {
+        val contentIntent = PendingIntent.getActivity(
+            context,
+            0,
+            Intent(context, MainActivity::class.java),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        return NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_media_play)
             .setContentTitle("Book Playback")
             .setContentText(if (playing) "Playing" else "Paused")
             .setOngoing(playing)
+            .setContentIntent(contentIntent)
             .addAction(
                 if (playing) android.R.drawable.ic_media_pause else android.R.drawable.ic_media_play,
                 if (playing) "Pause" else "Play",
@@ -49,6 +58,7 @@ object PlaybackNotification {
             )
             .setOnlyAlertOnce(true)
             .build()
+    }
 
     private fun createChannel(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

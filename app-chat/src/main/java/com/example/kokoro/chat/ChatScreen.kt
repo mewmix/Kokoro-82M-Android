@@ -1,5 +1,6 @@
 package com.example.kokoro.chat
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,10 +12,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.animateItemPlacement
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -63,6 +66,7 @@ fun ChatScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
                 .padding(paddingValues)
         ) {
             LazyColumn(
@@ -72,7 +76,10 @@ fun ChatScreen(
                 reverseLayout = true
             ) {
                 items(chatState.reversed()) { chatMessage ->
-                    MessageBubble(chatMessage)
+                    MessageBubble(
+                        chatMessage,
+                        modifier = Modifier.animateItemPlacement()
+                    )
                     Spacer(modifier = Modifier.height(8.dp))
                 }
             }
@@ -111,7 +118,7 @@ fun ChatScreen(
                     },
                     enabled = message.isNotBlank() && !isLoading
                 ) {
-                    Text("Send")
+                    Icon(Icons.Filled.Send, contentDescription = "Send")
                 }
             }
         }
@@ -119,9 +126,9 @@ fun ChatScreen(
 }
 
 @Composable
-fun MessageBubble(chatMessage: ChatMessage) {
+fun MessageBubble(chatMessage: ChatMessage, modifier: Modifier = Modifier) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         horizontalArrangement = if (chatMessage.isFromUser) Arrangement.End else Arrangement.Start
     ) {
         Card(
