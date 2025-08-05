@@ -81,6 +81,22 @@ fun Acknowledgements() {
             context = context
         )
 
+        Spacer(modifier = Modifier.height(2.dp))
+
+        ClickableLink(
+            text = "TensorFlow Lite: efficient on-device AI (Apache 2.0)",
+            url = "https://github.com/google-ai-edge",
+            context = context
+        )
+
+        Spacer(modifier = Modifier.height(2.dp))
+
+        ClickableLink(
+            text = "Kokoro-82M-Android: Java/Android ONNX Runtime (MIT)",
+            url = "https://github.com/puff-dayo/Kokoro-82M-Android",
+            context = context
+        )
+
     }
 }
 
