@@ -3,5 +3,7 @@
     <style name="AppTheme" parent="Theme.Material3.DynamicColors.DayNight.NoActionBar">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/nabu_logo_foreground</item>
+        <item name="android:windowSplashScreenBackground">@color/white</item>
     </style>
 </resources>
