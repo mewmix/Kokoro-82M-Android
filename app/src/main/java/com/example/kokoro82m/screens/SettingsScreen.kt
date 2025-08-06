@@ -12,6 +12,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
@@ -22,6 +23,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.kokoro82m.utils.SettingsManager
 import com.example.kokoro82m.utils.TtsEngine
+import com.example.kokoro82m.utils.OnnxRuntimeManager
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -30,6 +34,12 @@ fun SettingsScreen() {
     var debug by remember { mutableStateOf(SettingsManager.isDebug(context)) }
     var engine by remember { mutableStateOf(SettingsManager.getTtsEngine(context)) }
     var expanded by remember { mutableStateOf(false) }
+
+    LaunchedEffect(engine) {
+        withContext(Dispatchers.IO) {
+            OnnxRuntimeManager.initialize(context.applicationContext)
+        }
+    }
 
     Column(modifier = Modifier.padding(16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {

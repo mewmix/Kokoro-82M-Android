@@ -46,6 +46,7 @@ android {
 dependencies {
     implementation(project(":app-chat"))
     implementation(project(":core-utils"))
+    implementation(project(":app-tts"))
     implementation("com.google.ai.edge.litert:litert:1.0.1")
     runtimeOnly("com.google.ai.edge.litert:litert-gpu:1.0.1")
     implementation("com.google.mediapipe:tasks-core:latest.release")
