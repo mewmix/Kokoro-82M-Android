@@ -1,0 +1,13 @@
+<svg width="200" height="60" viewBox="0 0 200 60" xmlns="http://www.w3.org/2000/svg" fill="none">
+  <!-- Symbol: N stylized -->
+  <g transform="translate(10,10)">
+    <rect x="0" y="0" width="8" height="40" fill="#3F51B5" rx="2"/>
+    <path d="M8 0 L24 40" stroke="#3F51B5" stroke-width="8" stroke-linecap="round"/>
+    <rect x="24" y="0" width="8" height="40" fill="#3F51B5" rx="2"/>
+  </g>
+
+  <!-- Text: NABU -->
+  <text x="50" y="38" font-family="Arial, sans-serif" font-size="30" fill="#212121" letter-spacing="4">
+    NABU
+  </text>
+</svg>
