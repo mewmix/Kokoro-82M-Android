@@ -1,6 +1,7 @@
 package com.example.kokoro82m.screens
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -31,7 +32,7 @@ fun SettingsScreen() {
     var expanded by remember { mutableStateOf(false) }
 
     Column(modifier = Modifier.padding(16.dp)) {
-        androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
             Switch(
                 checked = debug,
                 onCheckedChange = {
@@ -54,7 +55,7 @@ fun SettingsScreen() {
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                 modifier = Modifier.menuAnchor().fillMaxWidth()
             )
-            androidx.compose.material3.ExposedDropdownMenu(
+            ExposedDropdownMenu(
                 expanded = expanded,
                 onDismissRequest = { expanded = false }
             ) {
