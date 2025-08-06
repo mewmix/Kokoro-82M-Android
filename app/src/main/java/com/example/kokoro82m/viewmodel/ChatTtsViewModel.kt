@@ -34,6 +34,7 @@ class ChatTtsViewModel(
     // Dependencies
     private val phonemeConverter = PhonemeConverter(context)
     val styleLoader = StyleLoader(context)
+    private val defaultVoice = styleLoader.names.firstOrNull() ?: "af_sarah"
     private val audioPlayer = AudioPlayer(viewModelScope) { newState ->
         _playerState.value = newState
     }
@@ -53,10 +54,10 @@ class ChatTtsViewModel(
     val playerState = _playerState.asStateFlow()
 
     // Mixer State
-    private val _selectedStyles = MutableStateFlow(listOf("af_sarah"))
+    private val _selectedStyles = MutableStateFlow(listOf(defaultVoice))
     val selectedStyles = _selectedStyles.asStateFlow()
 
-    private val _weights = MutableStateFlow(mapOf("af_sarah" to 1f))
+    private val _weights = MutableStateFlow(mapOf(defaultVoice to 1f))
     val weights = _weights.asStateFlow()
 
     private val _interpolationMode = MutableStateFlow(InterpolationMode.LINEAR)
@@ -185,7 +186,7 @@ class ChatTtsViewModel(
         _selectedStyles.value -= style
         _weights.value -= style
         if (_selectedStyles.value.isEmpty()) {
-            addStyle("af_sarah") // Ensure at least one style is always selected
+            addStyle(defaultVoice) // Ensure at least one style is always selected
         }
     }
 

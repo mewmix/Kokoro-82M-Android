@@ -52,8 +52,9 @@ fun BookScreen(
     val listState = rememberLazyListState()
 
     val styleLoader = remember { StyleLoader(context) }
-    var selectedStyles by remember { mutableStateOf(listOf("af_sarah")) }
-    var weights by remember { mutableStateOf(mapOf("af_sarah" to 1f)) }
+    val defaultVoice = styleLoader.names.firstOrNull() ?: "af_sarah"
+    var selectedStyles by remember { mutableStateOf(listOf(defaultVoice)) }
+    var weights by remember { mutableStateOf(mapOf(defaultVoice to 1f)) }
     var interpolationMode by remember { mutableStateOf(InterpolationMode.LINEAR) }
     var speed by remember { mutableFloatStateOf(SettingsManager.getSpeed(context)) }
     var debugMessage by remember { mutableStateOf<String?>(null) }
@@ -90,8 +91,8 @@ fun BookScreen(
         bookUri?.let { uri ->
             val project = ProjectManager.load(context, uri.toString())
             if (project != null) {
-                selectedStyles = project.styles.ifEmpty { listOf("af_sarah") }
-                weights = if (project.weights.isNotEmpty()) project.weights else mapOf("af_sarah" to 1f)
+                selectedStyles = project.styles.ifEmpty { listOf(defaultVoice) }
+                weights = if (project.weights.isNotEmpty()) project.weights else mapOf(defaultVoice to 1f)
                 interpolationMode = project.mode
                 speed = project.speed
                 bookmark = project.bookmark
