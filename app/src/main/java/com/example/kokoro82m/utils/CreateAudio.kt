@@ -44,7 +44,7 @@ fun createAudio(
     )
 
     val inputs = mapOf(
-        "tokens" to tokenTensor,
+        "input_ids" to tokenTensor,
         "style" to styleTensor,
         "speed" to speedTensor
     )
@@ -90,7 +90,7 @@ fun createAudioFromStyleVector(
     )
 
     val inputs = mapOf(
-        "tokens" to tokenTensor,
+        "input_ids" to tokenTensor,
         "style" to styleTensor,
         "speed" to speedTensor
     )
@@ -128,7 +128,7 @@ fun createKittenAudioFromStyleVector(
     )
 
     val inputs = mapOf(
-        "tokens" to tokenTensor,
+        "input_ids" to tokenTensor,
         "style" to styleTensor,
         "speed" to speedTensor
     )
