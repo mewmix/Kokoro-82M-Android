@@ -1,6 +1,5 @@
 package com.example.kokoro82m.screens
 
-import ai.onnxruntime.OrtSession
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -54,6 +53,7 @@ import com.example.kokoro82m.utils.SettingsManager
 import com.example.kokoro82m.utils.TtsEngine
 import com.example.kokoro82m.utils.DebugLogger
 import com.example.kokoro82m.utils.buildStyleFileName
+import com.example.kokoro82m.utils.OnnxRuntimeManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -61,12 +61,12 @@ import kotlinx.coroutines.withContext
 /** Simplified mixer screen showing a static style configuration. */
 @Composable
 fun MixerScreen(
-    session: OrtSession,
     phonemeConverter: PhonemeConverter,
-    styleLoader: StyleLoader,
 ) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    val engine = SettingsManager.getTtsEngine(context)
+    val styleLoader = remember(engine) { StyleLoader(context) }
     val scrollState = rememberScrollState()
 
     var text by remember { mutableStateOf("This is her warm heart, her warmest kokoro, unwavering love and comfort.") }
@@ -75,7 +75,7 @@ fun MixerScreen(
     var shouldSaveFile by remember { mutableStateOf(false) }
 
     val defaultVoice = styleLoader.names.firstOrNull() ?: "af_sarah"
-    val initial = remember {
+    val initial = remember(engine) {
         loadStyleConfig(context) ?: Triple(
             listOf(defaultVoice),
             mapOf(defaultVoice to 1f),
@@ -160,7 +160,6 @@ fun MixerScreen(
                             speed,
                             shouldSaveFile,
                             null,
-                            session,
                             phonemeConverter,
                             scope,
                             context
@@ -186,7 +185,6 @@ fun MixerScreen(
                             speed,
                             shouldSaveFile,
                             fileName,
-                            session,
                             phonemeConverter,
                             scope,
                             context
@@ -229,7 +227,6 @@ private fun generateAudio(
     speed: Float,
     shouldSaveFile: Boolean,
     fileName: String?,
-    session: OrtSession,
     phonemeConverter: PhonemeConverter,
     scope: kotlinx.coroutines.CoroutineScope,
     context: android.content.Context,
@@ -237,6 +234,7 @@ private fun generateAudio(
 ) {
     scope.launch(Dispatchers.IO) {
         try {
+            val session = OnnxRuntimeManager.getSession()
             val engine = SettingsManager.getTtsEngine(context)
             val (audio, sampleRate) = if (engine == TtsEngine.KITTEN) {
                 val (_, tokens) = KittenPhonemizer.phonemize(text)

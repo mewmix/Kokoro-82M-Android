@@ -9,7 +9,6 @@ import com.example.kokoro82m.screens.MixerScreen
 import com.example.kokoro82m.screens.MoreScreen
 import com.example.kokoro82m.screens.ModelsScreen
 import com.example.kokoro.galleryport.PerfHud
-import ai.onnxruntime.OrtSession
 import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -81,6 +80,7 @@ import com.example.kokoro82m.utils.saveAudio
 import com.example.kokoro82m.utils.SettingsManager
 import com.example.kokoro82m.utils.TtsEngine
 import com.example.kokoro82m.utils.DebugLogger
+import com.example.kokoro82m.utils.OnnxRuntimeManager
 import com.google.android.material.color.DynamicColors
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -158,15 +158,12 @@ class MainActivity : ComponentActivity() {
                 }
 
                 val viewModel: MainViewModel = viewModel { MainViewModel(this@MainActivity) }
-                val session = remember { viewModel.getSession() }
 
                 MainScreen(
-                    session = session,
                     phonemeConverter = phonemeConverter,
                     onGenerateAudio = { text, style, speed, shouldSave, onComplete ->
                         maybeRequestNotificationPermission()
                         generateAudio(
-                            session,
                             phonemeConverter,
                             text,
                             style,
@@ -204,7 +201,6 @@ class MainActivity : ComponentActivity() {
 }
 
 private fun generateAudio(
-    session: OrtSession,
     phonemeConverter: PhonemeConverter,
     text: String,
     style: String,
@@ -214,6 +210,7 @@ private fun generateAudio(
     shouldSave: Boolean,
     onComplete: () -> Unit
 ) {
+    val session = OnnxRuntimeManager.getSession()
     scope.launch(Dispatchers.IO) {
         try {
             val engine = SettingsManager.getTtsEngine(context)
@@ -305,7 +302,6 @@ sealed class Screen(val title: String) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
-    session: OrtSession,
     phonemeConverter: PhonemeConverter,
     onGenerateAudio: (String, String, Float, Boolean, () -> Unit) -> Unit,
     userPreferencesRepository: UserPreferencesRepository,
@@ -314,8 +310,6 @@ fun MainScreen(
     var currentScreen by remember { mutableStateOf(initialScreen) }
     var hudEnabled by remember { mutableStateOf(false) }
     val context = LocalContext.current
-    val viewModel: MainViewModel = viewModel { MainViewModel(context) }
-
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
@@ -385,14 +379,11 @@ fun MainScreen(
     ) { innerPadding ->
         Box(modifier = Modifier.padding(innerPadding)) {
             when (currentScreen) {
-                Screen.Basic -> BasicScreen(session = session, onGenerateAudio = onGenerateAudio, viewModel = viewModel)
+                Screen.Basic -> BasicScreen(onGenerateAudio = onGenerateAudio)
                 Screen.Mixer -> MixerScreen(
-                    session = session,
-                    phonemeConverter = phonemeConverter,
-                    styleLoader = StyleLoader(context)
+                    phonemeConverter = phonemeConverter
                 )
                 Screen.Book -> BookScreen(
-                    session = session,
                     phonemeConverter = phonemeConverter
                 )
                 Screen.Chat -> {
@@ -422,16 +413,15 @@ fun MainScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BasicScreen(
-    session: OrtSession,
     onGenerateAudio: (String, String, Float, Boolean, () -> Unit) -> Unit,
-    viewModel: MainViewModel
 ) {
     val context = LocalContext.current
-    val styleLoader = remember { StyleLoader(context) }
+    var engine by remember { mutableStateOf(SettingsManager.getTtsEngine(context)) }
+    val styleLoader = remember(engine) { StyleLoader(context) }
     val names = styleLoader.names.sorted()
 
     var text by remember { mutableStateOf("This is her warm heart, her warmest kokoro, unwavering love and comfort.") }
-    var style by remember {
+    var style by remember(engine) {
         mutableStateOf(
             SettingsManager.getStyle(context).takeIf { it in names }
                 ?: names.firstOrNull().orEmpty()
@@ -441,19 +431,14 @@ fun BasicScreen(
     var isProcessing by remember { mutableStateOf(false) }
     var shouldSaveFile by remember { mutableStateOf(false) }
 
-    val modelManager = remember { com.example.kokoro82m.data.ModelManager(context) }
-    val models = remember { modelManager.models.filter { it.isDownloaded } }
-    var selectedModel by remember { mutableStateOf(models.firstOrNull()) }
-
-    LaunchedEffect(selectedModel) {
-        selectedModel?.let {
-            val modelFile = java.io.File(context.filesDir, "models/${it.id}.task")
-            viewModel.reinitializeSession(modelFile.absolutePath)
+    LaunchedEffect(engine) {
+        withContext(Dispatchers.IO) {
+            OnnxRuntimeManager.initialize(context.applicationContext)
         }
     }
 
     var expanded by remember { mutableStateOf(false) }
-    var modelExpanded by remember { mutableStateOf(false) }
+    var engineExpanded by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -474,33 +459,34 @@ fun BasicScreen(
         )
 
         ExposedDropdownMenuBox(
-            expanded = modelExpanded,
-            onExpandedChange = { modelExpanded = !modelExpanded },
+            expanded = engineExpanded,
+            onExpandedChange = { engineExpanded = !engineExpanded },
             modifier = Modifier.fillMaxWidth()
         ) {
             TextField(
-                value = selectedModel?.name ?: "Select a model",
-                onValueChange = { },
-                label = { Text("Model") },
+                value = engine.name,
+                onValueChange = {},
+                label = { Text("TTS Engine") },
                 modifier = Modifier
                     .fillMaxWidth()
                     .menuAnchor(),
                 readOnly = true,
                 trailingIcon = {
-                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = modelExpanded)
+                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = engineExpanded)
                 }
             )
 
             DropdownMenu(
-                expanded = modelExpanded,
-                onDismissRequest = { modelExpanded = false }
+                expanded = engineExpanded,
+                onDismissRequest = { engineExpanded = false }
             ) {
-                models.forEach { model ->
+                TtsEngine.values().forEach { option ->
                     DropdownMenuItem(
-                        text = { Text(model.name) },
+                        text = { Text(option.name) },
                         onClick = {
-                            selectedModel = model
-                            modelExpanded = false
+                            engine = option
+                            SettingsManager.setTtsEngine(context, option)
+                            engineExpanded = false
                         }
                     )
                 }

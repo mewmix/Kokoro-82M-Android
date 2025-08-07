@@ -1,6 +1,5 @@
 package com.example.kokoro82m.screens
 
-import ai.onnxruntime.OrtSession
 import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -35,7 +34,6 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun BookScreen(
-    session: OrtSession,
     phonemeConverter: PhonemeConverter,
     bookViewModel: BookViewModel = viewModel()
 ) {
@@ -51,11 +49,12 @@ fun BookScreen(
 
     val listState = rememberLazyListState()
 
-    val styleLoader = remember { StyleLoader(context) }
+    val engine = SettingsManager.getTtsEngine(context)
+    val styleLoader = remember(engine) { StyleLoader(context) }
     val defaultVoice = styleLoader.names.firstOrNull() ?: "af_sarah"
-    var selectedStyles by remember { mutableStateOf(listOf(defaultVoice)) }
-    var weights by remember { mutableStateOf(mapOf(defaultVoice to 1f)) }
-    var interpolationMode by remember { mutableStateOf(InterpolationMode.LINEAR) }
+    var selectedStyles by remember(engine) { mutableStateOf(listOf(defaultVoice)) }
+    var weights by remember(engine) { mutableStateOf(mapOf(defaultVoice to 1f)) }
+    var interpolationMode by remember(engine) { mutableStateOf(InterpolationMode.LINEAR) }
     var speed by remember { mutableFloatStateOf(SettingsManager.getSpeed(context)) }
     var debugMessage by remember { mutableStateOf<String?>(null) }
     var isProcessing by remember { mutableStateOf(false) }
@@ -321,7 +320,7 @@ fun BookScreen(
                                 bookViewModel.audioPlayer.stop()
                             }
                             bookViewModel.startPlayback(
-                                session = session,
+                                session = OnnxRuntimeManager.getSession(),
                                 phonemeConverter = phonemeConverter,
                                 styleLoader = styleLoader,
                                 selectedStyles = selectedStyles,
@@ -374,6 +373,7 @@ fun BookScreen(
                                 val audioData = mutableListOf<Float>()
                                 val engine = SettingsManager.getTtsEngine(context)
                                 val sampleRate = if (engine == TtsEngine.KITTEN) 24000 else 22050
+                                val onnxSession = OnnxRuntimeManager.getSession()
                                 for (line in lines) {
                                     val (audio, _) = if (engine == TtsEngine.KITTEN) {
                                         val (_, tokens) = KittenPhonemizer.phonemize(line)
@@ -381,7 +381,7 @@ fun BookScreen(
                                             tokens = tokens,
                                             voice = mixedVector,
                                             speed = speed,
-                                            session = session
+                                            session = onnxSession
                                         )
                                     } else {
                                         val phonemes = phonemeConverter.phonemize(line)
@@ -389,7 +389,7 @@ fun BookScreen(
                                             phonemes = phonemes,
                                             voice = mixedVector,
                                             speed = speed,
-                                            session = session
+                                            session = onnxSession
                                         )
                                     }
                                     audioData.addAll(audio.toList())
@@ -424,6 +424,7 @@ fun BookScreen(
                                     val audioData = mutableListOf<Float>()
                                     val engine = SettingsManager.getTtsEngine(context)
                                     val sampleRate = if (engine == TtsEngine.KITTEN) 24000 else 22050
+                                    val onnxSession = OnnxRuntimeManager.getSession()
                                     for (i in selectedLines.sorted()) {
                                         val (audio, _) = if (engine == TtsEngine.KITTEN) {
                                             val (_, tokens) = KittenPhonemizer.phonemize(lines[i])
@@ -431,7 +432,7 @@ fun BookScreen(
                                                 tokens = tokens,
                                                 voice = mixedVector,
                                                 speed = speed,
-                                                session = session
+                                                session = onnxSession
                                             )
                                         } else {
                                             val phonemes = phonemeConverter.phonemize(lines[i])
@@ -439,7 +440,7 @@ fun BookScreen(
                                                 phonemes = phonemes,
                                                 voice = mixedVector,
                                                 speed = speed,
-                                                session = session
+                                                session = onnxSession
                                             )
                                         }
                                         audioData.addAll(audio.toList())
@@ -479,7 +480,7 @@ fun BookScreen(
                                     )
                                     preGenerateBook(
                                         context = context,
-                                        session = session,
+                                        session = OnnxRuntimeManager.getSession(),
                                         phonemeConverter = phonemeConverter,
                                         styleLoader = styleLoader,
                                         project = project,
@@ -515,7 +516,7 @@ fun BookScreen(
                             } else {
                                 bookViewModel.setCurrentLine(index)
                                 bookViewModel.startPlayback(
-                                    session = session,
+                                    session = OnnxRuntimeManager.getSession(),
                                     phonemeConverter = phonemeConverter,
                                     styleLoader = styleLoader,
                                     selectedStyles = selectedStyles,
