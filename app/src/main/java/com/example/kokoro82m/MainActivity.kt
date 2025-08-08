@@ -384,7 +384,6 @@ fun MainScreen(
             when (currentScreen) {
                 Screen.Basic -> BasicScreen(onGenerateAudio = onGenerateAudio)
                 Screen.Mixer -> MixerScreen(
-                    session = session,
                     phonemeConverter = phonemeConverter,
                     styleLoader = StyleLoader(context)
                 )

@@ -1,6 +1,5 @@
 package com.example.kokoro82m.screens
 
-import ai.onnxruntime.OrtSession
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -53,6 +52,7 @@ import com.example.kokoro82m.utils.saveAudio
 import com.example.kokoro82m.utils.SettingsManager
 import com.example.kokoro82m.utils.TtsEngine
 import com.example.kokoro82m.utils.DebugLogger
+import com.example.kokoro82m.utils.OnnxRuntimeManager
 import com.example.kokoro82m.utils.buildStyleFileName
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -61,7 +61,6 @@ import kotlinx.coroutines.withContext
 /** Simplified mixer screen showing a static style configuration. */
 @Composable
 fun MixerScreen(
-    session: OrtSession,
     phonemeConverter: PhonemeConverter,
     styleLoader: StyleLoader,
 ) {
@@ -160,7 +159,6 @@ fun MixerScreen(
                             speed,
                             shouldSaveFile,
                             null,
-                            session,
                             phonemeConverter,
                             scope,
                             context
@@ -186,7 +184,6 @@ fun MixerScreen(
                             speed,
                             shouldSaveFile,
                             fileName,
-                            session,
                             phonemeConverter,
                             scope,
                             context
@@ -229,12 +226,12 @@ private fun generateAudio(
     speed: Float,
     shouldSaveFile: Boolean,
     fileName: String?,
-    session: OrtSession,
     phonemeConverter: PhonemeConverter,
     scope: kotlinx.coroutines.CoroutineScope,
     context: android.content.Context,
     onComplete: () -> Unit
 ) {
+    val session = OnnxRuntimeManager.getSession()
     scope.launch(Dispatchers.IO) {
         try {
             val engine = SettingsManager.getTtsEngine(context)
