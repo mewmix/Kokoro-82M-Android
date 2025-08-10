@@ -30,7 +30,9 @@ import com.example.kokoro82m.R
 import com.example.kokoro82m.utils.*
 import com.example.kokoro82m.ui.components.ProgressDialog
 import com.example.kokoro82m.viewmodel.BookViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class, ExperimentalFoundationApi::class)
 @Composable
@@ -41,6 +43,14 @@ fun BookScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+
+    val engine by rememberUpdatedState(SettingsManager.getTtsEngine(context))
+
+    LaunchedEffect(engine) {
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            OnnxRuntimeManager.initialize(context.applicationContext)
+        }
+    }
 
     val lines by bookViewModel.lines.collectAsState()
     val currentLine by bookViewModel.currentLine.collectAsState()

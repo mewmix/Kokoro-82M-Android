@@ -36,6 +36,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
@@ -67,6 +69,14 @@ fun MixerScreen(
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val scrollState = rememberScrollState()
+
+    val engine by rememberUpdatedState(SettingsManager.getTtsEngine(context))
+
+    LaunchedEffect(engine) {
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            OnnxRuntimeManager.initialize(context.applicationContext)
+        }
+    }
 
     var text by remember { mutableStateOf("This is her warm heart, her warmest kokoro, unwavering love and comfort.") }
     var speed by remember { mutableFloatStateOf(SettingsManager.getSpeed(context)) }
