@@ -52,6 +52,7 @@ dependencies {
     implementation("com.google.mediapipe:tasks-genai:latest.release")
       implementation("com.squareup.okhttp3:okhttp:4.12.0")
       implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
+    implementation("org.jsoup:jsoup:1.17.2")
 
       implementation(libs.androidx.core.ktx)
       implementation("androidx.core:core-splashscreen:1.0.1")

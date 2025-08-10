@@ -8,6 +8,8 @@ import ai.onnxruntime.OrtSession
 import com.example.kokoro82m.utils.AudioPlayer
 import com.example.kokoro82m.utils.AudioPlayerManager
 import com.example.kokoro82m.utils.InterpolationMode
+import com.example.kokoro82m.utils.DocumentReader
+import com.example.kokoro82m.utils.ChunkFeeder
 import com.example.kokoro82m.utils.PhonemeConverter
 import com.example.kokoro82m.utils.PlayerState
 import com.example.kokoro82m.utils.PlaybackNotification
@@ -108,5 +110,14 @@ class BookViewModel : ViewModel() {
         audioPlayer.stop()
         appContext?.let { PlaybackNotification.cancel(it) }
         AudioPlayerManager.player = null
+    }
+
+    fun openEpub(context: Context, uri: Uri) {
+        val res = DocumentReader.epubAsFlow(context, uri)
+        ChunkFeeder.start(viewModelScope, res.chunks)
+    }
+
+    fun stopReading() {
+        ChunkFeeder.stop()
     }
 }

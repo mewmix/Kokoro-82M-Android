@@ -1,7 +1,6 @@
 package com.example.kokoro82m.screens
 
 import ai.onnxruntime.OrtSession
-import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -69,17 +68,10 @@ fun BookScreen(
     var projects by remember { mutableStateOf(listOf<Project>()) }
     val selectedLines = remember { mutableStateListOf<Int>() }
 
-    val launcher = rememberLauncherForActivityResult(
+    val picker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
-        uri?.let {
-            // Persist read permission so the URI can be reopened later from saved projects
-            context.contentResolver.takePersistableUriPermission(
-                it,
-                Intent.FLAG_GRANT_READ_URI_PERMISSION
-            )
-            bookViewModel.loadBook(context, it)
-        }
+        uri?.let { bookViewModel.openEpub(context, it) }
     }
 
     LaunchedEffect(Unit) {
@@ -292,8 +284,8 @@ fun BookScreen(
                 horizontalArrangement = Arrangement.spacedBy(dimensionResource(id = R.dimen.padding_small)),
                 maxItemsInEachRow = 3
             ) {
-                Button(onClick = { launcher.launch(arrayOf("text/plain")) }) {
-                    Text("Open")
+                Button(onClick = { picker.launch(arrayOf("application/epub+zip")) }) {
+                    Text("Open EPUB")
                 }
                 Button(
                     onClick = {
