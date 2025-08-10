@@ -18,10 +18,10 @@ object TextExtractor {
         targetChars: Int = PhonemizerLimits.TARGET_CHARS_PER_CHUNK
     ): Pair<Sequence<String>, DocMeta> {
         val (spineSeq, meta) = readSpineTexts(ctx, uri)
-        val sentenceSeq = sequence {
+        val sentenceSeq = sequence<String> {
             for (text in spineSeq) {
                 normalize(text).let { t ->
-                    splitIntoSentences(t).forEach { emit(it) }
+                    splitIntoSentences(t).forEach { yield(it) }
                 }
             }
         }
@@ -113,7 +113,12 @@ object TextExtractor {
         maxChars: Int
     ): Sequence<String> = sequence {
         val buf = StringBuilder()
-        fun flush() { if (buf.isNotEmpty()) { yield(buf.toString().trim()); buf.clear() } }
+        suspend fun SequenceScope<String>.flush() {
+            if (buf.isNotEmpty()) {
+                yield(buf.toString().trim())
+                buf.clear()
+            }
+        }
         for (s in sentences) {
             val needed = if (buf.isEmpty()) s.length else s.length + 1 // space
             if (buf.length + needed <= targetChars) {

@@ -18,7 +18,7 @@ object EpubSpine {
                 readEntryBytes(zis, "META-INF/container.xml")
             }
         } ?: return fallback()
-        val containerDoc = Jsoup.parse(containerXml, "", Parser.xmlParser())
+        val containerDoc = Jsoup.parse(String(containerXml), "", Parser.xmlParser())
         val rootfilePath = containerDoc.selectFirst("rootfile")?.attr("full-path") ?: return fallback()
 
         val opfBytes = ctx.contentResolver.openInputStream(uri)?.use { base ->
@@ -26,7 +26,7 @@ object EpubSpine {
                 readEntryBytes(zis, rootfilePath)
             }
         } ?: return fallback()
-        val opfDoc = Jsoup.parse(opfBytes, "", Parser.xmlParser())
+        val opfDoc = Jsoup.parse(String(opfBytes), "", Parser.xmlParser())
         val opfDir = rootfilePath.substringBeforeLast('/', "")
         val manifest = opfDoc.select("manifest > item").associate {
             it.attr("id") to it.attr("href")
