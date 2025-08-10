@@ -24,6 +24,11 @@ class MainViewModel(private val context: Context) : ViewModel() {
             OnnxRuntimeManager.reinitialize(context, modelPath)
         }
     }
+
+    override fun onCleared() {
+        super.onCleared()
+        OnnxRuntimeManager.close()
+    }
 }
 
 object OnnxRuntimeManager {
@@ -35,7 +40,6 @@ object OnnxRuntimeManager {
         if (environment == null) {
             environment = OrtEnvironment.getEnvironment()
         }
-        session?.close()
         session = if (modelPath != null) {
             createSession(modelPath)
         } else {
@@ -80,5 +84,10 @@ object OnnxRuntimeManager {
 
 
     fun getSession() = requireNotNull(session) { "ONNX Session not initialized" }
+
+    fun close() {
+        session?.close()
+        environment?.close()
+    }
 }
 
