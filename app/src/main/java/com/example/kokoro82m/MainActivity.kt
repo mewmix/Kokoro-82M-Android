@@ -9,6 +9,7 @@ import com.example.kokoro82m.screens.MixerScreen
 import com.example.kokoro82m.screens.MoreScreen
 import com.example.kokoro82m.screens.ModelsScreen
 import com.example.kokoro82m.screens.DebugLogScreen
+import com.example.kokoro82m.screens.CreditsConstellationScreen
 import com.example.kokoro.galleryport.PerfHud
 import ai.onnxruntime.OrtSession
 import android.app.Application
@@ -70,7 +71,6 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.kokoro82m.data.UserPreferencesRepository
-import com.example.kokoro82m.screens.Acknowledgements
 import com.example.kokoro82m.utils.MainViewModel
 import com.example.kokoro82m.utils.PhonemeConverter
 import com.example.kokoro82m.utils.StyleLoader
@@ -279,12 +279,10 @@ private fun screenFromString(name: String?): Screen = when (name) {
     "Basic" -> Screen.Basic
     "Mixer" -> Screen.Mixer
     "Book" -> Screen.Book
-    "Chat" -> Screen.Chat
     "ChatTts" -> Screen.ChatTts
     "More" -> Screen.More
     "Creations" -> Screen.Creations
     "Settings" -> Screen.Settings
-    "About" -> Screen.About
     "Models" -> Screen.Models
     "DebugLog" -> Screen.DebugLog
     else -> Screen.Basic
@@ -294,14 +292,13 @@ sealed class Screen(val title: String) {
     object Basic : Screen("Basic TTS")
     object Mixer : Screen("Mixer")
     object Book : Screen("Audio Book")
-    object Chat : Screen("Chat") // Existing Chat (for ChatActivity)
     object ChatTts : Screen("Chat TTS") // New screen state for ChatTtsActivity if needed for selection
     object More : Screen("More")
     object Creations : Screen("Creations")
     object Settings : Screen("Settings")
-    object About : Screen("About this app")
     object Models : Screen("Models")
     object DebugLog : Screen("Debug Log")
+    object Credits : Screen("Credits")
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -347,18 +344,6 @@ fun MainScreen(
                     onClick = { currentScreen = Screen.Book }
                 )
                 NavigationBarItem(
-                    icon = { Icon(Icons.Default.Info, contentDescription = "Chat") }, // Existing Chat
-                    label = { Text("Chat") },
-                    selected = currentScreen == Screen.Chat, // This might not highlight correctly if always launching an activity
-                    onClick = {
-                        context.startActivity(Intent(context, ChatActivity::class.java))
-                        // Optionally set currentScreen if you want to try and reflect selection,
-                        // but launching a new activity makes this tricky.
-                        // currentScreen = Screen.Chat
-                    }
-                )
-                // START --- New NavigationBarItem for ChatTtsActivity ---
-                NavigationBarItem(
                     icon = { Icon(Icons.Filled.RecordVoiceOver, contentDescription = "Chat TTS") }, // Example new icon
                     label = { Text("Chat TTS") },
                     selected = currentScreen == Screen.ChatTts, // For selection state
@@ -367,14 +352,7 @@ fun MainScreen(
                         // currentScreen = Screen.ChatTts // If you want to try and reflect selection
                     }
                 )
-                // END --- New NavigationBarItem for ChatTtsActivity ---
                 NavigationBarItem(
-                    icon = { Icon(Icons.Default.Info, contentDescription = "About") },
-                    label = { Text("About") },
-                    selected = currentScreen == Screen.About,
-                    onClick = { currentScreen = Screen.About }
-                )
-                 NavigationBarItem(
                     icon = { Icon(Icons.Default.MoreHoriz, contentDescription = "More") },
                     label = { Text("More") },
                     selected = currentScreen == Screen.More,
@@ -394,9 +372,6 @@ fun MainScreen(
                     session = session,
                     phonemeConverter = phonemeConverter
                 )
-                Screen.Chat -> {
-                    // No-op, handled by onClick which starts ChatActivity
-                }
                 Screen.ChatTts -> {
                     // No-op, handled by onClick which starts ChatTtsActivity
                     // This case is primarily for the 'selected' state of the NavigationBarItem
@@ -406,14 +381,15 @@ fun MainScreen(
                         "Creations" -> Screen.Creations
                         "Settings" -> Screen.Settings
                         "Models" -> Screen.Models
+                        "Credits" -> Screen.Credits
                         "DebugLog" -> Screen.DebugLog
                         else -> currentScreen
                     }
                 }
                 Screen.Creations -> CreationsScreen()
                 Screen.Settings -> SettingsScreen()
-                Screen.About -> AboutScreen()
                 Screen.Models -> ModelsScreen(userPreferencesRepository)
+                Screen.Credits -> CreditsConstellationScreen()
                 Screen.DebugLog -> DebugLogScreen()
             }
         }
@@ -598,16 +574,6 @@ fun BasicScreen(
     }
 }
 
-@Composable
-fun AboutScreen() {
-    Column(
-        modifier = Modifier
-            .padding(16.dp)
-            .fillMaxSize()
-    ) {
-        Acknowledgements()
-    }
-}
 
 //@Preview(showBackground = true)
 //@Composable
