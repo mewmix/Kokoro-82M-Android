@@ -40,6 +40,12 @@ fun MoreScreen(onNavigate: (String) -> Unit) {
         ) {
             Text("Models")
         }
+        Button(
+            onClick = { onNavigate("Credits") },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Credits")
+        }
         if (SettingsManager.isDebug(context)) {
             Button(
                 onClick = { onNavigate("DebugLog") },

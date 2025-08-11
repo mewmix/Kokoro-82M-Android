@@ -9,6 +9,7 @@ import com.example.kokoro82m.screens.MixerScreen
 import com.example.kokoro82m.screens.MoreScreen
 import com.example.kokoro82m.screens.ModelsScreen
 import com.example.kokoro82m.screens.DebugLogScreen
+import com.example.kokoro82m.screens.CreditsConstellationScreen
 import com.example.kokoro.galleryport.PerfHud
 import ai.onnxruntime.OrtSession
 import android.app.Application
@@ -302,6 +303,7 @@ sealed class Screen(val title: String) {
     object About : Screen("About this app")
     object Models : Screen("Models")
     object DebugLog : Screen("Debug Log")
+    object Credits : Screen("Credits")
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -406,6 +408,7 @@ fun MainScreen(
                         "Creations" -> Screen.Creations
                         "Settings" -> Screen.Settings
                         "Models" -> Screen.Models
+                        "Credits" -> Screen.Credits
                         "DebugLog" -> Screen.DebugLog
                         else -> currentScreen
                     }
@@ -414,6 +417,7 @@ fun MainScreen(
                 Screen.Settings -> SettingsScreen()
                 Screen.About -> AboutScreen()
                 Screen.Models -> ModelsScreen(userPreferencesRepository)
+                Screen.Credits -> CreditsConstellationScreen()
                 Screen.DebugLog -> DebugLogScreen()
             }
         }
