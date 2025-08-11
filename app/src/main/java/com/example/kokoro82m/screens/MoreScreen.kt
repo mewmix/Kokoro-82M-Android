@@ -41,6 +41,12 @@ fun MoreScreen(onNavigate: (String) -> Unit) {
             Text("Models")
         }
         Button(
+            onClick = { onNavigate("Benchmark") },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Benchmark")
+        }
+        Button(
             onClick = { onNavigate("Credits") },
             modifier = Modifier.fillMaxWidth()
         ) {

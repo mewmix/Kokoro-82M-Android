@@ -10,6 +10,13 @@ object SettingsManager {
     fun isDebug(context: Context): Boolean =
         (DatabaseManager.getSetting(context, "debug") ?: "0") == "1"
 
+    fun setProfilerEnabled(context: Context, enabled: Boolean) {
+        DatabaseManager.setSetting(context, "profiler_enabled", if (enabled) "1" else "0")
+    }
+
+    fun isProfilerEnabled(context: Context): Boolean =
+        (DatabaseManager.getSetting(context, "profiler_enabled") ?: "0") == "1"
+
     fun setStyle(context: Context, style: String) {
         DatabaseManager.setSetting(context, "style", style)
     }
