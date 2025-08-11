@@ -1,6 +1,7 @@
 package com.example.kokoro.galleryport
 
 import android.content.Context
+import com.example.kokoro82m.utils.PerfProfiler
 import com.google.mediapipe.tasks.genai.llminference.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.channels.awaitClose
@@ -27,7 +28,9 @@ class LlmController private constructor(val llm: LlmInference) {
                 .setModelPath(modelFile.absolutePath)
                 .setMaxTokens(4096)
                 .build()
-            return LlmController(LlmInference.createFromOptions(ctx, opts))
+            return PerfProfiler.track("LlmInference Create") {
+                LlmController(LlmInference.createFromOptions(ctx, opts))
+            }
         }
     }
 

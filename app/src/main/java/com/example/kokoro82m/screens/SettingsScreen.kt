@@ -33,6 +33,7 @@ import kotlinx.coroutines.withContext
 fun SettingsScreen() {
     val context = LocalContext.current
     var debug by remember { mutableStateOf(SettingsManager.isDebug(context)) }
+    var profilerEnabled by remember { mutableStateOf(SettingsManager.isProfilerEnabled(context)) }
     var engine by remember { mutableStateOf(SettingsManager.getTtsEngine(context)) }
     var expanded by remember { mutableStateOf(false) }
 
@@ -52,6 +53,16 @@ fun SettingsScreen() {
                 }
             )
             Text(text = "Debug Mode", modifier = Modifier.padding(start = 8.dp))
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Switch(
+                checked = profilerEnabled,
+                onCheckedChange = {
+                    profilerEnabled = it
+                    SettingsManager.setProfilerEnabled(context, it)
+                }
+            )
+            Text(text = "Enable Profiler Overlay", modifier = Modifier.padding(start = 8.dp))
         }
 
         ExposedDropdownMenuBox(

@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import com.example.kokoro82m.utils.DebugLogger
 import com.example.kokoro82m.utils.PhonemeUtils
+import com.example.kokoro82m.utils.PerfProfiler
 
 fun createAudio(
     phonemes: String,
@@ -53,7 +54,9 @@ fun createAudio(
             "style" to styleTensor,
             "speed" to speedTensor
         )
-        val results = session.run(inputs)
+        val results = PerfProfiler.track("TTS Synth (Kokoro)") {
+            session.run(inputs)
+        }
         val audioTensor = results[0].value as FloatArray
         results.close()
         audioData.addAll(audioTensor.toList())
@@ -103,7 +106,9 @@ fun createAudioFromStyleVector(
             "style" to styleTensor,
             "speed" to speedTensor
         )
-        val results = session.run(inputs)
+        val results = PerfProfiler.track("TTS Synth (Kokoro)") {
+            session.run(inputs)
+        }
         val audioTensor = results[0].value as FloatArray
         results.close()
         audioData.addAll(audioTensor.toList())
@@ -149,7 +154,9 @@ fun createAudioFlowFromStyleVector(
             "style" to styleTensor,
             "speed" to speedTensor
         )
-        val results = session.run(inputs)
+        val results = PerfProfiler.track("TTS Synth (Kokoro)") {
+            session.run(inputs)
+        }
         val audioTensor = results[0].value as FloatArray
         results.close()
         emit(audioTensor)
@@ -182,7 +189,9 @@ fun createKittenAudioFromStyleVector(
         "style" to styleTensor,
         "speed" to speedTensor
     )
-    val results = session.run(inputs)
+    val results = PerfProfiler.track("TTS Synth (Kitten)") {
+        session.run(inputs)
+    }
     val audioTensor = results[0].value as FloatArray
     results.close()
 

@@ -18,6 +18,7 @@ import com.example.kokoro82m.utils.DebugLogger
 import com.example.kokoro82m.utils.createAudioFromStyleVector
 import com.example.kokoro82m.utils.createKittenAudioFromStyleVector
 import com.example.kokoro82m.utils.SettingsManager
+import com.example.kokoro82m.utils.PerfProfiler
 import com.example.kokoro82m.utils.TtsEngine
 import com.example.kokoro82m.utils.mixStyles
 import kotlinx.coroutines.Dispatchers
@@ -93,6 +94,7 @@ class ChatTtsViewModel(
 
     fun sendMessage(message: String) {
         DebugLogger.log("ChatTtsViewModel sendMessage: $message")
+        PerfProfiler.start("E2E Latency")
         _chatMessages.value += ChatMessage(message, true)
         _isLoading.value = true
 
@@ -100,9 +102,11 @@ class ChatTtsViewModel(
         val sentenceBuilder = StringBuilder()
         _chatMessages.value += ChatMessage("...", false)  // placeholder
 
+        PerfProfiler.start("LLM First Token")
         viewModelScope.launch(Dispatchers.IO) {
             llmInference.sendMessage(message) { partial, done ->
                 if (!done) {
+                    if (responseBuilder.isEmpty()) PerfProfiler.end("LLM First Token")
                     responseBuilder.append(partial)
                     sentenceBuilder.append(partial)
                     val last = _chatMessages.value.last()
@@ -135,6 +139,7 @@ class ChatTtsViewModel(
         }
         builder.clear()
         builder.append(text)
+        PerfProfiler.start("Handoff Latency")
         if (done && builder.isNotEmpty()) {
             val sentence = builder.toString().trim()
             builder.clear()
@@ -146,6 +151,7 @@ class ChatTtsViewModel(
         viewModelScope.launch {
             _isSynthesizing.value = true
             try {
+                PerfProfiler.end("Handoff Latency")
                 DebugLogger.log("Synthesizing: ${text}")
                 val audioData = withContext(Dispatchers.IO) {
                     val mixedVector = mixStyles(
@@ -175,6 +181,7 @@ class ChatTtsViewModel(
                     data
                 }
                 audioQueue.send(audioData)
+                if (playerState.value == PlayerState.IDLE) PerfProfiler.end("E2E Latency")
             } catch (e: Exception) {
                 DebugLogger.log("Error synthesizing sentence: ${e.localizedMessage}")
             } finally {

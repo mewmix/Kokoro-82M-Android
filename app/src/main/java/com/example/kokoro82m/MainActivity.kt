@@ -9,8 +9,8 @@ import com.example.kokoro82m.screens.MixerScreen
 import com.example.kokoro82m.screens.MoreScreen
 import com.example.kokoro82m.screens.ModelsScreen
 import com.example.kokoro82m.screens.DebugLogScreen
+import com.example.kokoro82m.screens.BenchmarkScreen
 import com.example.kokoro82m.screens.CreditsConstellationScreen
-import com.example.kokoro.galleryport.PerfHud
 import ai.onnxruntime.OrtSession
 import android.app.Application
 import android.app.NotificationChannel
@@ -83,6 +83,7 @@ import com.example.kokoro82m.utils.SettingsManager
 import com.example.kokoro82m.utils.TtsEngine
 import com.example.kokoro82m.utils.DebugLogger
 import com.example.kokoro82m.utils.OnnxRuntimeManager
+import com.example.kokoro82m.utils.PerfProfiler
 import com.google.android.material.color.DynamicColors
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -225,7 +226,7 @@ private fun generateAudio(
                 }
                 val loader = StyleLoader(context)
                 val voiceArray = loader.getStyleArray(style)
-                PerfHud.record("ONNX synth") {
+                PerfProfiler.track("ONNX synth") {
                     createKittenAudioFromStyleVector(
                         tokens = tokens,
                         voice = voiceArray,
@@ -239,7 +240,7 @@ private fun generateAudio(
                 withContext(Dispatchers.Main) {
                     Toast.makeText(context, "Phonemes: $phonemes", Toast.LENGTH_LONG).show()
                 }
-                PerfHud.record("ONNX synth") {
+                PerfProfiler.track("ONNX synth") {
                     createAudio(
                         voice = style,
                         phonemes = phonemes,
@@ -285,6 +286,7 @@ private fun screenFromString(name: String?): Screen = when (name) {
     "Settings" -> Screen.Settings
     "Models" -> Screen.Models
     "DebugLog" -> Screen.DebugLog
+    "Benchmark" -> Screen.Benchmark
     else -> Screen.Basic
 }
 
@@ -298,6 +300,7 @@ sealed class Screen(val title: String) {
     object Settings : Screen("Settings")
     object Models : Screen("Models")
     object DebugLog : Screen("Debug Log")
+    object Benchmark : Screen("Benchmark")
     object Credits : Screen("Credits")
 }
 
@@ -310,16 +313,19 @@ fun MainScreen(
     userPreferencesRepository: UserPreferencesRepository,
     initialScreen: Screen = Screen.Basic
 ) {
-    var currentScreen by remember { mutableStateOf(initialScreen) }
-    var hudEnabled by remember { mutableStateOf(false) }
+    var currentScreen by remember { mutableStateOf<Screen>(initialScreen) }
     val context = LocalContext.current
+    var profilerEnabled by remember { mutableStateOf(SettingsManager.isProfilerEnabled(context)) }
+    var profilerVisible by remember { mutableStateOf(false) }
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text(currentScreen.title) },
                 actions = {
-                    Switch(checked = hudEnabled, onCheckedChange = { checked -> hudEnabled = checked })
+                    if (profilerEnabled) {
+                        Switch(checked = profilerVisible, onCheckedChange = { profilerVisible = it })
+                    }
                 }
             )
         },
@@ -382,17 +388,22 @@ fun MainScreen(
                         "Settings" -> Screen.Settings
                         "Models" -> Screen.Models
                         "Credits" -> Screen.Credits
+                        "Benchmark" -> Screen.Benchmark
                         "DebugLog" -> Screen.DebugLog
                         else -> currentScreen
                     }
                 }
                 Screen.Creations -> CreationsScreen()
+                Screen.Benchmark -> BenchmarkScreen()
                 Screen.Settings -> SettingsScreen()
                 Screen.Models -> ModelsScreen(userPreferencesRepository)
                 Screen.Credits -> CreditsConstellationScreen()
                 Screen.DebugLog -> DebugLogScreen()
             }
         }
+    }
+    if (profilerVisible) {
+        PerfProfiler.Overlay()
     }
 }
 
