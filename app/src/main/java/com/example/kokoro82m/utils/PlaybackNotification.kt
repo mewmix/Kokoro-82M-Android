@@ -13,16 +13,15 @@ object PlaybackNotification {
     private const val CHANNEL_ID = "book_playback_channel"
     private const val NOTIFICATION_ID = 1001
 
-    fun show(context: Context, playing: Boolean) {
+    fun show(context: Context, state: PlayerState) {
         createChannel(context)
-        val notification = buildNotification(context, playing)
+        val notification = buildNotification(context, state)
         NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, notification)
     }
 
     fun update(context: Context, state: PlayerState) {
         when (state) {
-            PlayerState.PLAYING -> show(context, true)
-            PlayerState.PAUSED -> show(context, false)
+            PlayerState.PLAYING, PlayerState.PAUSED -> show(context, state)
             PlayerState.IDLE -> cancel(context)
         }
     }
@@ -31,24 +30,70 @@ object PlaybackNotification {
         NotificationManagerCompat.from(context).cancel(NOTIFICATION_ID)
     }
 
-    private fun buildNotification(context: Context, playing: Boolean) =
-        NotificationCompat.Builder(context, CHANNEL_ID)
+    private fun buildNotification(context: Context, state: PlayerState): android.app.Notification {
+        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_media_play)
             .setContentTitle("Book Playback")
-            .setContentText(if (playing) "Playing" else "Paused")
-            .setOngoing(playing)
-            .addAction(
-                if (playing) android.R.drawable.ic_media_pause else android.R.drawable.ic_media_play,
-                if (playing) "Pause" else "Play",
-                PendingIntent.getBroadcast(
-                    context,
-                    0,
-                    Intent(PlaybackReceiver.ACTION_TOGGLE),
-                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                )
-            )
             .setOnlyAlertOnce(true)
-            .build()
+
+        val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+
+        when (state) {
+            PlayerState.PLAYING -> {
+                builder.setContentText("Playing")
+                    .setOngoing(true)
+                    .addAction(
+                        android.R.drawable.ic_media_pause,
+                        "Pause",
+                        PendingIntent.getBroadcast(
+                            context,
+                            0,
+                            Intent(PlaybackReceiver.ACTION_PAUSE),
+                            flags
+                        )
+                    )
+                    .addAction(
+                        android.R.drawable.ic_menu_close_clear_cancel,
+                        "Stop",
+                        PendingIntent.getBroadcast(
+                            context,
+                            1,
+                            Intent(PlaybackReceiver.ACTION_STOP),
+                            flags
+                        )
+                    )
+            }
+            PlayerState.PAUSED -> {
+                builder.setContentText("Paused")
+                    .setOngoing(false)
+                    .addAction(
+                        android.R.drawable.ic_media_play,
+                        "Play",
+                        PendingIntent.getBroadcast(
+                            context,
+                            0,
+                            Intent(PlaybackReceiver.ACTION_PLAY),
+                            flags
+                        )
+                    )
+                    .addAction(
+                        android.R.drawable.ic_menu_close_clear_cancel,
+                        "Stop",
+                        PendingIntent.getBroadcast(
+                            context,
+                            1,
+                            Intent(PlaybackReceiver.ACTION_STOP),
+                            flags
+                        )
+                    )
+            }
+            else -> {
+                builder.setContentText("Stopped").setOngoing(false)
+            }
+        }
+
+        return builder.build()
+    }
 
     private fun createChannel(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
