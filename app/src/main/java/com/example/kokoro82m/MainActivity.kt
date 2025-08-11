@@ -426,11 +426,12 @@ fun BasicScreen(
     onGenerateAudio: (String, String, Float, Boolean, () -> Unit) -> Unit,
 ) {
     val context = LocalContext.current
-    val styleLoader = remember { StyleLoader(context) }
+    var engine by remember { mutableStateOf(SettingsManager.getTtsEngine(context)) }
+    val styleLoader = remember(engine) { StyleLoader(context) }
     val names = styleLoader.names.sorted()
 
     var text by remember { mutableStateOf("This is her warm heart, her warmest kokoro, unwavering love and comfort.") }
-    var style by remember {
+    var style by remember(engine) {
         mutableStateOf(
             SettingsManager.getStyle(context).takeIf { it in names }
                 ?: names.firstOrNull().orEmpty()
@@ -439,12 +440,12 @@ fun BasicScreen(
     var speed by remember { mutableFloatStateOf(SettingsManager.getSpeed(context)) }
     var isProcessing by remember { mutableStateOf(false) }
     var shouldSaveFile by remember { mutableStateOf(false) }
-    var engine by remember { mutableStateOf(SettingsManager.getTtsEngine(context)) }
 
     LaunchedEffect(engine) {
         withContext(Dispatchers.IO) {
             OnnxRuntimeManager.initialize(context.applicationContext)
         }
+        SettingsManager.setStyle(context, style)
     }
 
     var expanded by remember { mutableStateOf(false) }
