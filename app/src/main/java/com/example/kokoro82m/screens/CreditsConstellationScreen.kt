@@ -1,0 +1,175 @@
+package com.example.kokoro82m.screens
+
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.dp
+import kotlin.math.PI
+import kotlin.math.cos
+import kotlin.math.roundToInt
+import kotlin.math.sin
+
+// Data classes representing credits hierarchy
+
+data class CreditEntry(val text: String, val url: String? = null)
+
+data class CreditGroup(
+    val title: String,
+    val entries: List<CreditEntry> = emptyList(),
+    val children: List<CreditGroup> = emptyList()
+)
+
+@Composable
+fun CreditsConstellationScreen() {
+    // Legacy credits preserved exactly
+    val legacyCredits = remember {
+        CreditGroup(
+            title = "Original Author",
+            children = listOf(
+                CreditGroup(
+                    title = "Credits",
+                    entries = listOf(
+                        CreditEntry(
+                            "Kokoro: a frontier TTS model (Apache 2.0)",
+                            "https://huggingface.co/hexgrad/Kokoro-82M"
+                        ),
+                        CreditEntry(
+                            "Kokoro-ONNX: converted kokoro (MIT)",
+                            "https://github.com/thewh1teagle/kokoro-onnx"
+                        ),
+                        CreditEntry(
+                            "CMU dict: a pronunciation dictionary",
+                            "http://www.speech.cs.cmu.edu/cgi-bin/cmudict"
+                        ),
+                        CreditEntry(
+                            "IPA Transcribers: language transliterators (GPL-3.0)",
+                            "https://github.com/kotlinguistics/IPA-Transcribers"
+                        ),
+                        CreditEntry(
+                            "Android NNAPI: a machine learning API",
+                            "https://developer.android.com/ndk/guides/neuralnetworks"
+                        )
+                    )
+                )
+            )
+        )
+    }
+
+    // Our own acknowledgments
+    val ourCredits = remember {
+        CreditGroup(
+            title = "Our Credit Wall",
+            entries = listOf(
+                CreditEntry("Jane Doe"),
+                CreditEntry("John Smith")
+            )
+        )
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        StarCluster(group = legacyCredits)
+        Spacer(modifier = Modifier.height(32.dp))
+        StarCluster(group = ourCredits)
+    }
+}
+
+@Composable
+private fun StarCluster(group: CreditGroup, modifier: Modifier = Modifier, size: Dp = 200.dp) {
+    var expanded by remember { mutableStateOf(false) }
+    val nodes = group.children.map { Node.Group(it) } + group.entries.map { Node.Entry(it) }
+    val clusterSize = if (expanded) size * (1f + nodes.size * 0.1f) else size
+    val radius = (clusterSize / 2) - 24.dp
+    Box(modifier = modifier.padding(8.dp).size(clusterSize), contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            IconButton(onClick = { expanded = !expanded }) {
+                Icon(Icons.Default.Star, contentDescription = group.title)
+            }
+            Text(text = group.title, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.Center)
+        }
+        AnimatedVisibility(visible = expanded) {
+            val density = LocalDensity.current
+            Box(modifier = Modifier.fillMaxSize()) {
+                val radiusPx = with(density) { radius.toPx() }
+                nodes.forEachIndexed { index, node ->
+                    val angle = 2 * PI * index / nodes.size
+                    val x = (cos(angle) * radiusPx).roundToInt()
+                    val y = (sin(angle) * radiusPx).roundToInt()
+                    when (node) {
+                        is Node.Group -> StarCluster(
+                            group = node.group,
+                            modifier = Modifier.offset { IntOffset(x, y) },
+                            size = size * 0.5f
+                        )
+                        is Node.Entry -> StarNode(
+                            entry = node.entry,
+                            modifier = Modifier.offset { IntOffset(x, y) }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+private sealed class Node {
+    data class Group(val group: CreditGroup) : Node()
+    data class Entry(val entry: CreditEntry) : Node()
+}
+
+@Composable
+private fun StarNode(entry: CreditEntry, modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        IconButton(onClick = {
+            entry.url?.let {
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(it))
+                context.startActivity(intent)
+            }
+        }) {
+            Icon(Icons.Default.Star, contentDescription = entry.text, tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(16.dp))
+        }
+        Text(
+            text = entry.text,
+            style = MaterialTheme.typography.labelSmall,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.widthIn(max = 120.dp)
+        )
+    }
+}
