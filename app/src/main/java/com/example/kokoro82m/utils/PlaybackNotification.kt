@@ -37,18 +37,36 @@ object PlaybackNotification {
             .setContentTitle("Book Playback")
             .setContentText(if (playing) "Playing" else "Paused")
             .setOngoing(playing)
-            .addAction(
-                if (playing) android.R.drawable.ic_media_pause else android.R.drawable.ic_media_play,
-                if (playing) "Pause" else "Play",
-                PendingIntent.getBroadcast(
-                    context,
-                    0,
-                    Intent(PlaybackReceiver.ACTION_TOGGLE),
-                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            .apply {
+                if (playing) {
+                    addAction(
+                        android.R.drawable.ic_media_pause,
+                        "Pause",
+                        broadcastIntent(context, PlaybackReceiver.ACTION_PAUSE)
+                    )
+                } else {
+                    addAction(
+                        android.R.drawable.ic_media_play,
+                        "Play",
+                        broadcastIntent(context, PlaybackReceiver.ACTION_PLAY)
+                    )
+                }
+                addAction(
+                    android.R.drawable.ic_menu_close_clear_cancel,
+                    "Stop",
+                    broadcastIntent(context, PlaybackReceiver.ACTION_STOP)
                 )
-            )
+            }
             .setOnlyAlertOnce(true)
             .build()
+
+    private fun broadcastIntent(context: Context, action: String): PendingIntent =
+        PendingIntent.getBroadcast(
+            context,
+            action.hashCode(),
+            Intent(context, PlaybackReceiver::class.java).setAction(action),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
 
     private fun createChannel(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

@@ -100,6 +100,7 @@ class BookViewModel : ViewModel() {
             onFinished = onFinished,
             usePregenerated = usePregenerated,
         )
+        AudioPlayerManager.playJob = playJob
     }
 
     fun stopPlayback() {
@@ -108,5 +109,6 @@ class BookViewModel : ViewModel() {
         audioPlayer.stop()
         appContext?.let { PlaybackNotification.cancel(it) }
         AudioPlayerManager.player = null
+        AudioPlayerManager.playJob = null
     }
 }
