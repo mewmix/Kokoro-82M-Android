@@ -42,6 +42,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.core.content.ContextCompat
 import com.example.kokoro82m.utils.InterpolationMode
 import com.example.kokoro82m.utils.PhonemeConverter
 import com.example.kokoro82m.utils.KittenPhonemizer
@@ -69,6 +74,20 @@ fun MixerScreen(
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val scrollState = rememberScrollState()
+
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) {}
+    fun requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(
+                context,
+                android.Manifest.permission.POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
 
     val engine by rememberUpdatedState(SettingsManager.getTtsEngine(context))
 
@@ -159,6 +178,7 @@ fun MixerScreen(
         Row(modifier = Modifier.fillMaxWidth()) {
             Button(
                 onClick = {
+                    requestNotificationPermission()
                     shouldSaveFile = false
                     isProcessing = true
                     scope.launch {
@@ -183,6 +203,7 @@ fun MixerScreen(
 
             Button(
                 onClick = {
+                    requestNotificationPermission()
                     shouldSaveFile = true
                     isProcessing = true
                     scope.launch {

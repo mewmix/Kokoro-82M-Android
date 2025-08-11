@@ -21,6 +21,7 @@ import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -426,6 +427,19 @@ fun BasicScreen(
     onGenerateAudio: (String, String, Float, Boolean, () -> Unit) -> Unit,
 ) {
     val context = LocalContext.current
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) {}
+    fun requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(
+                context,
+                android.Manifest.permission.POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
     var engine by remember { mutableStateOf(SettingsManager.getTtsEngine(context)) }
     val styleLoader = remember(engine) { StyleLoader(context) }
     val names = styleLoader.names.sorted()
@@ -561,6 +575,7 @@ fun BasicScreen(
         ) {
             Button(
                 onClick = {
+                    requestNotificationPermission()
                     shouldSaveFile = false
                     isProcessing = true
                     onGenerateAudio(text, style, speed, shouldSaveFile) {
@@ -579,6 +594,7 @@ fun BasicScreen(
 
             Button(
                 onClick = {
+                    requestNotificationPermission()
                     shouldSaveFile = true
                     isProcessing = true
                     onGenerateAudio(text, style, speed, shouldSaveFile) {
