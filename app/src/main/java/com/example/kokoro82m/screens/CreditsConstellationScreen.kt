@@ -110,7 +110,7 @@ fun CreditsConstellationScreen() {
 @Composable
 private fun StarCluster(group: CreditGroup, modifier: Modifier = Modifier, size: Dp = 200.dp) {
     var expanded by remember { mutableStateOf(false) }
-    val radius = (size / 2) - 24.dp
+    val radius = (size / 2) - 16.dp
     Box(modifier = modifier.padding(8.dp).size(size), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             IconButton(onClick = { expanded = !expanded }) {
@@ -131,7 +131,7 @@ private fun StarCluster(group: CreditGroup, modifier: Modifier = Modifier, size:
                         is Node.Group -> StarCluster(
                             group = node.group,
                             modifier = Modifier.offset { IntOffset(x, y) },
-                            size = size * 0.5f
+                            size = size * 0.75f
                         )
                         is Node.Entry -> StarNode(
                             entry = node.entry,
