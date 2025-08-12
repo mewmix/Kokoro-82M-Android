@@ -58,11 +58,11 @@ class ChatActivity : ComponentActivity() {
     }
 
     private fun startChat(model: Model) {
-        val modelFile = File(filesDir, "models/${model.id}.task")
+        val modelPath = model.localPath ?: File(filesDir, "models/${model.id}.task").absolutePath
 
         val llmInference = LlmInference(
             context = applicationContext,
-            modelPath = modelFile.absolutePath
+            modelPath = modelPath
         )
         llmInference.initialize()
 

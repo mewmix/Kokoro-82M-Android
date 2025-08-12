@@ -424,8 +424,8 @@ fun BasicScreen(
 
     LaunchedEffect(selectedModel) {
         selectedModel?.let {
-            val modelFile = java.io.File(context.filesDir, "models/${it.id}.task")
-            viewModel.reinitializeSession(modelFile.absolutePath)
+            val modelPath = it.localPath ?: java.io.File(context.filesDir, "models/${it.id}.task").absolutePath
+            viewModel.reinitializeSession(modelPath)
         }
     }
 

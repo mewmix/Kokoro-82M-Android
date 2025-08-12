@@ -7,6 +7,8 @@ data class Model(
     val repo: String,
     val downloadUrl: String,
     val gated: Boolean,
+    /** Optional absolute path if the model lives outside app storage */
+    var localPath: String? = null,
     var isDownloaded: Boolean = false,
     var hasPartial: Boolean = false,
 )

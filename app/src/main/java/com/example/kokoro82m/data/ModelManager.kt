@@ -15,6 +15,7 @@ class ModelManager(private val context: Context) {
         val jsonString = context.resources.openRawResource(R.raw.model_allowlist).bufferedReader().use { it.readText() }
         val json = JSONObject(jsonString)
         val keys = json.keys()
+        val externalDirPath = System.getenv("KOKORO_MODEL_DIR")
         while (keys.hasNext()) {
             val key = keys.next()
             val modelJson = json.getJSONObject(key)
@@ -26,11 +27,20 @@ class ModelManager(private val context: Context) {
                 downloadUrl = modelJson.getString("downloadUrl"),
                 gated = modelJson.optBoolean("gated", false)
             )
-            val modelDir = java.io.File(context.filesDir, "models")
-            val modelFile = java.io.File(modelDir, "${model.id}.task")
-            val partialFile = java.io.File(modelDir, "${model.id}.task.part")
-            model.isDownloaded = modelFile.exists()
-            model.hasPartial = !model.isDownloaded && partialFile.exists()
+
+            val internalDir = java.io.File(context.filesDir, "models")
+            val internalFile = java.io.File(internalDir, "${model.id}.task")
+            val externalFile = externalDirPath?.let { java.io.File(it, "${model.id}.task") }
+            val partialFile = java.io.File(internalDir, "${model.id}.task.part")
+
+            model.localPath = when {
+                internalFile.exists() -> internalFile.absolutePath
+                externalFile?.exists() == true -> externalFile.absolutePath
+                else -> null
+            }
+
+            model.isDownloaded = model.localPath != null
+            model.hasPartial = model.localPath == null && partialFile.exists()
             modelList.add(model)
         }
         return modelList
