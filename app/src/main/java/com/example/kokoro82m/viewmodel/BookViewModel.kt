@@ -2,6 +2,7 @@ package com.example.kokoro82m.viewmodel
 
 import android.content.Context
 import android.net.Uri
+import android.text.Html
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import ai.onnxruntime.OrtSession
@@ -19,6 +20,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.zip.ZipInputStream
 
 class BookViewModel : ViewModel() {
     private val _bookUri = MutableStateFlow<Uri?>(null)
@@ -48,13 +50,35 @@ class BookViewModel : ViewModel() {
     fun loadBook(context: Context, uri: Uri) {
         _bookUri.value = uri
         viewModelScope.launch(Dispatchers.IO) {
-            val text = try {
-                context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
+            val lines = try {
+                val type = context.contentResolver.getType(uri) ?: ""
+                val isEpub = type == "application/epub+zip" ||
+                    uri.toString().endsWith(".epub", ignoreCase = true)
+                if (isEpub) {
+                    context.contentResolver.openInputStream(uri)?.use { input ->
+                        val builder = StringBuilder()
+                        val zip = ZipInputStream(input)
+                        var entry = zip.nextEntry
+                        while (entry != null) {
+                            if (!entry.isDirectory && (entry.name.endsWith(".xhtml", true) || entry.name.endsWith(".html", true))) {
+                                val text = zip.readBytes().toString(Charsets.UTF_8)
+                                val cleaned = Html.fromHtml(text, Html.FROM_HTML_MODE_LEGACY).toString()
+                                builder.append(cleaned).append('\n')
+                            }
+                            zip.closeEntry()
+                            entry = zip.nextEntry
+                        }
+                        builder.toString().lines()
+                    } ?: emptyList()
+                } else {
+                    context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText().lines() }
+                        ?: emptyList()
+                }
             } catch (e: Exception) {
-                null
-            } ?: ""
+                emptyList()
+            }
             withContext(Dispatchers.Main) {
-                _lines.value = text.lines()
+                _lines.value = lines
             }
         }
     }
