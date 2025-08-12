@@ -3,6 +3,11 @@ package com.example.kokoro82m.screens
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,6 +33,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
@@ -110,7 +117,7 @@ fun CreditsConstellationScreen() {
 @Composable
 private fun StarCluster(group: CreditGroup, modifier: Modifier = Modifier, size: Dp = 200.dp) {
     var expanded by remember { mutableStateOf(false) }
-    val radius = (size / 2) - 24.dp
+    val radius = ((size / 2) - 24.dp) * 1.5f
     Box(modifier = modifier.padding(8.dp).size(size), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             IconButton(onClick = { expanded = !expanded }) {
@@ -121,12 +128,25 @@ private fun StarCluster(group: CreditGroup, modifier: Modifier = Modifier, size:
         AnimatedVisibility(visible = expanded) {
             val nodes = group.children.map { Node.Group(it) } + group.entries.map { Node.Entry(it) }
             val density = LocalDensity.current
-            Box(modifier = Modifier.fillMaxSize()) {
+            val infinite = rememberInfiniteTransition(label = "rotation")
+            val angle by infinite.animateFloat(
+                initialValue = 0f,
+                targetValue = 360f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(durationMillis = 20000, easing = LinearEasing)
+                ),
+                label = "angle"
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer(rotationZ = angle, transformOrigin = TransformOrigin.Center)
+            ) {
                 val radiusPx = with(density) { radius.toPx() }
                 nodes.forEachIndexed { index, node ->
-                    val angle = 2 * PI * index / nodes.size
-                    val x = (cos(angle) * radiusPx).roundToInt()
-                    val y = (sin(angle) * radiusPx).roundToInt()
+                    val angleRad = 2 * PI * index / nodes.size
+                    val x = (cos(angleRad) * radiusPx).roundToInt()
+                    val y = (sin(angleRad) * radiusPx).roundToInt()
                     when (node) {
                         is Node.Group -> StarCluster(
                             group = node.group,
