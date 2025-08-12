@@ -2,7 +2,6 @@ package com.example.kokoro82m.utils
 
 import android.content.Context
 import android.net.Uri
-import java.text.BreakIterator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -15,35 +14,27 @@ object DocumentReader {
         ctx: Context,
         uri: Uri,
         chunkSize: Int = 1600,
-        bySentence: Boolean = false // Renamed from byLine to bySentence for clarity
+        byLine: Boolean = false,
+        lineLength: Int = 120
     ): Result {
-        val (seq, meta) = TextExtractor.extract(ctx, uri, if (bySentence) Int.MAX_VALUE else chunkSize)
+        val (seq, meta) = TextExtractor.extract(ctx, uri, if (byLine) Int.MAX_VALUE else chunkSize)
         val fl = flow {
             for (block in seq) {
-                if (bySentence) {
-                    block.toSentences().forEach { emit(it) }
+                if (byLine) {
+                    // Split incoming text on punctuation or whitespace to create stable
+                    // line-based chunks suitable for bookmarking, while preserving
+                    // document loading behaviour across formats like EPUB.
+                    block.split(Regex("(?<=[.!?])\\s+|\\n+"))
+                        .asSequence()
+                        .flatMap { it.chunked(lineLength).asSequence() }
+                        .map { it.trim() }
+                        .filter { it.isNotEmpty() }
+                        .forEach { emit(it) }
                 } else {
                     emit(block)
                 }
             }
         }.flowOn(Dispatchers.IO)
         return Result(chunks = fl, title = meta.displayName)
-    }
-
-    private fun String.toSentences(): List<String> {
-        val boundary = BreakIterator.getSentenceInstance()
-        boundary.setText(this)
-        val sentences = mutableListOf<String>()
-        var start = boundary.first()
-        var end = boundary.next()
-        while (end != BreakIterator.DONE) {
-            val sentence = substring(start, end).trim()
-            if (sentence.isNotEmpty()) {
-                sentences.add(sentence)
-            }
-            start = end
-            end = boundary.next()
-        }
-        return sentences
     }
 }
