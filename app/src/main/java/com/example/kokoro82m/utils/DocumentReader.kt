@@ -10,10 +10,21 @@ import kotlinx.coroutines.flow.flowOn
 object DocumentReader {
     data class Result(val chunks: Flow<String>, val title: String)
 
-    fun asFlow(ctx: Context, uri: Uri, chunkSize: Int = 1600): Result {
-        val (seq, meta) = TextExtractor.extract(ctx, uri, chunkSize)
+    fun asFlow(
+        ctx: Context,
+        uri: Uri,
+        chunkSize: Int = 1600,
+        byLine: Boolean = false
+    ): Result {
+        val (seq, meta) = TextExtractor.extract(ctx, uri, if (byLine) Int.MAX_VALUE else chunkSize)
         val fl = flow {
-            for (c in seq) emit(c)
+            for (block in seq) {
+                if (byLine) {
+                    block.lineSequence().forEach { emit(it) }
+                } else {
+                    emit(block)
+                }
+            }
         }.flowOn(Dispatchers.IO)
         return Result(chunks = fl, title = meta.displayName)
     }
