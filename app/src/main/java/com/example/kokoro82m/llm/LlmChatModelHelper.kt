@@ -3,10 +3,11 @@ package com.example.kokoro82m.llm
 import android.content.Context
 import com.example.kokoro82m.data.*
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
+import com.google.mediapipe.tasks.genai.llminference.LlmInferenceSession
 import java.io.File
 
 /**
- * Helper to create [LlmInference] instances with configurable generation
+ * Helper to create [LlmInferenceSession] instances with configurable generation
  * parameters. Defaults are read from the model allowlist but callers may
  * override them by providing an [InferenceOptions] instance.
  */
@@ -22,8 +23,8 @@ object LlmChatModelHelper {
     fun initialize(
         context: Context,
         model: Model,
-        options: InferenceOptions = InferenceOptions()
-    ): LlmInference {
+        options: InferenceOptions = InferenceOptions(),
+    ): LlmInferenceSession {
         val maxTokens = options.maxTokens
             ?: model.getIntConfigValue(ConfigKeys.MAX_TOKENS, DEFAULT_MAX_TOKEN)
         val topK = options.topK
@@ -33,14 +34,20 @@ object LlmChatModelHelper {
         val temperature = options.temperature
             ?: model.getFloatConfigValue(ConfigKeys.TEMPERATURE, DEFAULT_TEMPERATURE)
 
-        val builder = LlmInference.LlmInferenceOptions.builder()
+        val inferenceOptions = LlmInference.LlmInferenceOptions.builder()
             .setModelPath(File(context.filesDir, "models/${model.id}.task").absolutePath)
             .setMaxTokens(maxTokens)
+            .setMaxTopK(topK)
+            .build()
+
+        val llm = LlmInference.createFromOptions(context, inferenceOptions)
+
+        val sessionOptions = LlmInferenceSession.LlmInferenceSessionOptions.builder()
             .setTopK(topK)
             .setTopP(topP)
             .setTemperature(temperature)
+            .build()
 
-        return LlmInference.createFromOptions(context, builder.build())
+        return LlmInferenceSession.createFromOptions(llm, sessionOptions)
     }
 }
-
