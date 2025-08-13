@@ -39,6 +39,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.kokoro.chat.MessageBubble
 import com.example.kokoro82m.utils.PlayerState
@@ -60,6 +62,11 @@ fun ChatTtsScreen(
     val weights by viewModel.weights.collectAsState()
     val interpolationMode by viewModel.interpolationMode.collectAsState()
     val speed by viewModel.speed.collectAsState()
+
+    val maxTokens by viewModel.maxTokens.collectAsState()
+    val topK by viewModel.topK.collectAsState()
+    val topP by viewModel.topP.collectAsState()
+    val temperature by viewModel.temperature.collectAsState()
 
     var message by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
@@ -87,6 +94,61 @@ fun ChatTtsScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
+            // LLM Settings
+            var maxTokensText by remember(maxTokens) { mutableStateOf(maxTokens.toString()) }
+            var topKText by remember(topK) { mutableStateOf(topK.toString()) }
+            var topPText by remember(topP) { mutableStateOf(topP.toString()) }
+            var temperatureText by remember(temperature) { mutableStateOf(temperature.toString()) }
+
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text("LLM Settings", style = androidx.compose.material3.MaterialTheme.typography.titleMedium)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = maxTokensText,
+                        onValueChange = { maxTokensText = it },
+                        label = { Text("Max Tokens") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = topKText,
+                        onValueChange = { topKText = it },
+                        label = { Text("Top K") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = topPText,
+                        onValueChange = { topPText = it },
+                        label = { Text("Top P") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = temperatureText,
+                        onValueChange = { temperatureText = it },
+                        label = { Text("Temperature") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Button(onClick = {
+                        viewModel.updateInferenceSettings(
+                            maxTokensText.toIntOrNull() ?: maxTokens,
+                            topKText.toIntOrNull() ?: topK,
+                            topPText.toFloatOrNull() ?: topP,
+                            temperatureText.toFloatOrNull() ?: temperature,
+                        )
+                    }) {
+                        Text("Apply")
+                    }
+                }
+            }
+
             // Mixer Settings in a Card
             Card(
                 modifier = Modifier

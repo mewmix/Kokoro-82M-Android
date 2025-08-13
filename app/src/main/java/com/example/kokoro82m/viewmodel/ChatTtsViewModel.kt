@@ -5,7 +5,16 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import ai.onnxruntime.OrtSession
 import com.example.kokoro.chat.ChatMessage
-import com.example.kokoro.chat.LlmInference
+import com.example.kokoro82m.data.ConfigKeys
+import com.example.kokoro82m.data.DEFAULT_MAX_TOKEN
+import com.example.kokoro82m.data.DEFAULT_TOPK
+import com.example.kokoro82m.data.DEFAULT_TOPP
+import com.example.kokoro82m.data.DEFAULT_TEMPERATURE
+import com.example.kokoro82m.data.Model
+import com.example.kokoro82m.data.getFloatConfigValue
+import com.example.kokoro82m.data.getIntConfigValue
+import com.example.kokoro82m.llm.LlmChatModelHelper
+import com.google.mediapipe.tasks.genai.llminference.LlmInferenceSession
 import com.example.kokoro82m.utils.AudioPlayer
 import com.example.kokoro82m.utils.InterpolationMode
 import com.example.kokoro82m.utils.KittenAudioPlayer
@@ -31,7 +40,7 @@ import java.lang.StringBuilder
 class ChatTtsViewModel(
     private val context: Context,
     private val ortSession: OrtSession,
-    private val llmInference: LlmInference
+    private val model: Model,
 ) : ViewModel() {
 
     // Dependencies
@@ -74,10 +83,25 @@ class ChatTtsViewModel(
     private val _speed = MutableStateFlow(1.0f)
     val speed = _speed.asStateFlow()
 
+    // LLM Settings
+    private val _maxTokens = MutableStateFlow(model.getIntConfigValue(ConfigKeys.MAX_TOKENS, DEFAULT_MAX_TOKEN))
+    val maxTokens = _maxTokens.asStateFlow()
+
+    private val _topK = MutableStateFlow(model.getIntConfigValue(ConfigKeys.TOPK, DEFAULT_TOPK))
+    val topK = _topK.asStateFlow()
+
+    private val _topP = MutableStateFlow(model.getFloatConfigValue(ConfigKeys.TOPP, DEFAULT_TOPP))
+    val topP = _topP.asStateFlow()
+
+    private val _temperature = MutableStateFlow(model.getFloatConfigValue(ConfigKeys.TEMPERATURE, DEFAULT_TEMPERATURE))
+    val temperature = _temperature.asStateFlow()
+
+    private var llmSession: LlmInferenceSession? = null
+
     private val audioQueue = Channel<FloatArray>(Channel.UNLIMITED)
 
     init {
-        llmInference.initialize()
+        rebuildLlmSession()
         // Launch a coroutine to play queued audio sequentially
         viewModelScope.launch {
             for (audio in audioQueue) {
@@ -101,7 +125,7 @@ class ChatTtsViewModel(
         _chatMessages.value += ChatMessage("...", false)  // placeholder
 
         viewModelScope.launch(Dispatchers.IO) {
-            llmInference.sendMessage(message) { partial, done ->
+            llmSession?.generateResponseAsync(message) { partial, done ->
                 if (!done) {
                     responseBuilder.append(partial)
                     sentenceBuilder.append(partial)
@@ -118,6 +142,28 @@ class ChatTtsViewModel(
                 }
             }
         }
+    }
+
+    private fun rebuildLlmSession() {
+        llmSession?.close()
+        llmSession = LlmChatModelHelper.initialize(
+            context,
+            model,
+            LlmChatModelHelper.InferenceOptions(
+                maxTokens = _maxTokens.value,
+                topK = _topK.value,
+                topP = _topP.value,
+                temperature = _temperature.value,
+            ),
+        )
+    }
+
+    fun updateInferenceSettings(maxTokens: Int, topK: Int, topP: Float, temperature: Float) {
+        _maxTokens.value = maxTokens
+        _topK.value = topK
+        _topP.value = topP
+        _temperature.value = temperature
+        rebuildLlmSession()
     }
 
     private fun processSentences(builder: StringBuilder, done: Boolean) {
@@ -213,7 +259,7 @@ class ChatTtsViewModel(
 
     override fun onCleared() {
         super.onCleared()
-        llmInference.close()
+        llmSession?.close()
         audioPlayer.stop()
     }
 }

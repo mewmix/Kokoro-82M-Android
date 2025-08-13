@@ -9,14 +9,12 @@ import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.example.kokoro.chat.LlmInference
 import com.example.kokoro82m.data.ModelManager
 import com.example.kokoro82m.data.Model
 import com.example.kokoro82m.screens.ChatTtsScreen
 import com.example.kokoro82m.utils.OnnxRuntimeManager
 import com.example.kokoro82m.utils.DebugLogger
 import com.example.kokoro82m.viewmodel.ChatTtsViewModel
-import java.io.File
 
 class ChatTtsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -63,15 +61,12 @@ class ChatTtsActivity : ComponentActivity() {
     }
 
     private fun startChat(model: Model, session: ai.onnxruntime.OrtSession) {
-        val modelFile = File(filesDir, "models/${model.id}.task")
-        val llmInference = LlmInference(applicationContext, modelFile.absolutePath)
-
         val viewModel: ChatTtsViewModel by viewModels {
             object : ViewModelProvider.Factory {
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
                     if (modelClass.isAssignableFrom(ChatTtsViewModel::class.java)) {
                         @Suppress("UNCHECKED_CAST")
-                        return ChatTtsViewModel(applicationContext, session, llmInference) as T
+                        return ChatTtsViewModel(applicationContext, session, model) as T
                     }
                     throw IllegalArgumentException("Unknown ViewModel class")
                 }
