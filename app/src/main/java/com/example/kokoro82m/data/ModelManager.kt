@@ -44,6 +44,10 @@ class ModelManager(private val context: Context) {
                 repo = modelJson.getString("repo"),
                 downloadUrl = modelJson.getString("downloadUrl"),
                 gated = modelJson.optBoolean("gated", false),
+                maxTokens = if (modelJson.has(ConfigKeys.MAX_TOKENS)) modelJson.getInt(ConfigKeys.MAX_TOKENS) else null,
+                topK = if (modelJson.has(ConfigKeys.TOPK)) modelJson.getInt(ConfigKeys.TOPK) else null,
+                topP = if (modelJson.has(ConfigKeys.TOPP)) modelJson.getDouble(ConfigKeys.TOPP).toFloat() else null,
+                temperature = if (modelJson.has(ConfigKeys.TEMPERATURE)) modelJson.getDouble(ConfigKeys.TEMPERATURE).toFloat() else null,
             )
             val modelDir = File(context.filesDir, "models")
             val modelFile = File(modelDir, "${model.id}.task")
