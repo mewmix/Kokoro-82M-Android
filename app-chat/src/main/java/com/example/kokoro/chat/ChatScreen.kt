@@ -125,7 +125,9 @@ fun MessageBubble(chatMessage: ChatMessage) {
         horizontalArrangement = if (chatMessage.isFromUser) Arrangement.End else Arrangement.Start
     ) {
         Card(
-            modifier = Modifier.padding(4.dp),
+            modifier = Modifier
+                .padding(4.dp)
+                .fillMaxWidth(0.9f),
             shape = RoundedCornerShape(
                 topStart = 16.dp,
                 topEnd = 16.dp,

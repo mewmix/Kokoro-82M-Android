@@ -28,6 +28,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -60,6 +61,7 @@ fun ChatTtsScreen(
     val weights by viewModel.weights.collectAsState()
     val interpolationMode by viewModel.interpolationMode.collectAsState()
     val speed by viewModel.speed.collectAsState()
+    val voiceEnabled by viewModel.voiceEnabled.collectAsState()
 
     var message by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
@@ -77,6 +79,15 @@ fun ChatTtsScreen(
                 navigationIcon = {
                     IconButton(onClick = onBackPressed) {
                         Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Voice")
+                        Switch(
+                            checked = voiceEnabled,
+                            onCheckedChange = viewModel::setVoiceEnabled
+                        )
                     }
                 }
             )

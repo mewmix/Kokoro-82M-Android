@@ -49,6 +49,9 @@ class ChatTtsViewModel(
     private val _playerState = MutableStateFlow(PlayerState.IDLE)
     val playerState = _playerState.asStateFlow()
 
+    private val _voiceEnabled = MutableStateFlow(true)
+    val voiceEnabled = _voiceEnabled.asStateFlow()
+
     // Mixer State
     private val _selectedStyles = MutableStateFlow(listOf("af_sarah"))
     val selectedStyles = _selectedStyles.asStateFlow()
@@ -131,6 +134,7 @@ class ChatTtsViewModel(
     }
 
     private fun synthesizeAndQueue(text: String) {
+        if (!_voiceEnabled.value) return
         viewModelScope.launch {
             _isSynthesizing.value = true
             try {
@@ -187,6 +191,10 @@ class ChatTtsViewModel(
 
     fun updateSpeed(newSpeed: Float) {
         _speed.value = newSpeed
+    }
+
+    fun setVoiceEnabled(enabled: Boolean) {
+        _voiceEnabled.value = enabled
     }
 
     override fun onCleared() {
