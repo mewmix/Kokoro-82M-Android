@@ -23,32 +23,37 @@ class PhonemeConverter(context: Context) {
                         if (parts.size == 2) {
                             phonemeMap[parts[0]] = parts[1]
                         } else {
-                            println("Invalid line format: $line")
+                            DebugLogger.log("Invalid line format: $line")
                         }
                     }
                 }
-            println("Dictionary loaded successfully. Total entries: ${phonemeMap.size}")
+            DebugLogger.log("Dictionary loaded successfully. Total entries: ${phonemeMap.size}")
         } catch (e: IOException) {
-            println("Error loading dictionary: ${e.message}")
+            DebugLogger.log("Error loading dictionary: ${e.message}")
             e.printStackTrace()
         } catch (e: Resources.NotFoundException) {
-            println("Dictionary file not found: ${e.message}")
+            DebugLogger.log("Dictionary file not found: ${e.message}")
             e.printStackTrace()
         }
     }
 
     private fun convertToPhonemes(word: String): String {
-
         if (word.matches(Regex("[^a-zA-Z']+"))) {
             return word
         }
 
+        val cleanUpper = word.replace(Regex("[^a-zA-Z']"), "").uppercase()
+        val phonemesFromDict = phonemeMap[cleanUpper]
 
-        val cleanWord = word.replace(Regex("[^a-zA-Z']"), "").uppercase()
-        val arpabetWithoutStress = cleanWord.replace(Regex("[0-9]"), "ˈ")
-        val phonemes = phonemeMap[arpabetWithoutStress] ?: return fallbackTranscribe(word)
+        val wasAllLowercase = word.all { it.isLowerCase() }
+        if (phonemesFromDict != null && wasAllLowercase && word.length <= 3) {
+            val stressCount = phonemesFromDict.count { it == 'ˈ' || it == 'ˌ' }
+            if (stressCount > 1) {
+                return fallbackTranscribe(word)
+            }
+        }
 
-
+        val phonemes = phonemesFromDict ?: return fallbackTranscribe(word)
 
         return phonemes.split(",").first().trim()
     }
@@ -64,7 +69,7 @@ class PhonemeConverter(context: Context) {
     fun phonemize(text: String, lang: String = "en-us", norm: Boolean = true): String {
 
         val normalizedText = if (norm) normalizeText(text) else text
-        println("normalText: $normalizedText")
+        DebugLogger.log("normalText: $normalizedText")
 
 
         val wordsAndPunctuation = normalizedText
@@ -74,7 +79,7 @@ class PhonemeConverter(context: Context) {
 
         val phonemes = StringBuilder()
         for ((index, word) in wordsAndPunctuation.withIndex()) {
-            println("word: $word")
+            DebugLogger.log("word: $word")
             val ipaPhonemes = if (word.matches(Regex("[^a-zA-Z']+"))) {
                 word
             } else {

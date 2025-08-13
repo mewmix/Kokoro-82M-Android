@@ -8,6 +8,8 @@ import com.example.kokoro82m.screens.SettingsScreen
 import com.example.kokoro82m.screens.MixerScreen
 import com.example.kokoro82m.screens.MoreScreen
 import com.example.kokoro82m.screens.ModelsScreen
+import com.example.kokoro82m.screens.DebugLogScreen
+import com.example.kokoro82m.screens.CreditsConstellationScreen
 import com.example.kokoro.galleryport.PerfHud
 import ai.onnxruntime.OrtSession
 import android.app.Application
@@ -35,10 +37,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.RecordVoiceOver
+import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -51,7 +55,6 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.Switch
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -68,15 +71,18 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.kokoro82m.data.UserPreferencesRepository
-import com.example.kokoro82m.screens.Acknowledgements
 import com.example.kokoro82m.utils.MainViewModel
 import com.example.kokoro82m.utils.PhonemeConverter
 import com.example.kokoro82m.utils.StyleLoader
 import com.example.kokoro82m.utils.createAudio
+import com.example.kokoro82m.utils.createKittenAudioFromStyleVector
+import com.example.kokoro82m.utils.KittenPhonemizer
 import com.example.kokoro82m.utils.playAudio
 import com.example.kokoro82m.utils.saveAudio
 import com.example.kokoro82m.utils.SettingsManager
+import com.example.kokoro82m.utils.TtsEngine
 import com.example.kokoro82m.utils.DebugLogger
+import com.example.kokoro82m.utils.OnnxRuntimeManager
 import com.google.android.material.color.DynamicColors
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -154,15 +160,13 @@ class MainActivity : ComponentActivity() {
                 }
 
                 val viewModel: MainViewModel = viewModel { MainViewModel(this@MainActivity) }
-                val session = remember { viewModel.getSession() }
 
                 MainScreen(
-                    session = session,
+                    session = viewModel.getSession(),
                     phonemeConverter = phonemeConverter,
                     onGenerateAudio = { text, style, speed, shouldSave, onComplete ->
                         maybeRequestNotificationPermission()
                         generateAudio(
-                            session,
                             phonemeConverter,
                             text,
                             style,
@@ -200,7 +204,6 @@ class MainActivity : ComponentActivity() {
 }
 
 private fun generateAudio(
-    session: OrtSession,
     phonemeConverter: PhonemeConverter,
     text: String,
     style: String,
@@ -210,34 +213,54 @@ private fun generateAudio(
     shouldSave: Boolean,
     onComplete: () -> Unit
 ) {
+    val session = OnnxRuntimeManager.getSession()
     scope.launch(Dispatchers.IO) {
         try {
-            val phonemes = phonemeConverter.phonemize(text)
-            DebugLogger.log("Phonemes: $phonemes")
-            withContext(Dispatchers.Main) {
-                Toast.makeText(context, "Phonemes: $phonemes", Toast.LENGTH_LONG).show()
-            }
-
-
-            val (audioData, sampleRate) = PerfHud.record("ONNX synth") {
-                createAudio(
-                    voice = style,
-                    phonemes = phonemes,
-                    speed = speed,
-                    context = context,
-                    session = session
-                )
+            val engine = SettingsManager.getTtsEngine(context)
+            val (audioData, sampleRate) = if (engine == TtsEngine.KITTEN) {
+                val (phonemeStr, tokens) = KittenPhonemizer.phonemize(text)
+                DebugLogger.log("Phonemes: $phonemeStr")
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "Phonemes: $phonemeStr", Toast.LENGTH_LONG).show()
+                }
+                val loader = StyleLoader(context)
+                val voiceArray = loader.getStyleArray(style)
+                PerfHud.record("ONNX synth") {
+                    createKittenAudioFromStyleVector(
+                        tokens = tokens,
+                        voice = voiceArray,
+                        speed = speed,
+                        session = session
+                    )
+                }
+            } else {
+                val phonemes = phonemeConverter.phonemize(text)
+                DebugLogger.log("Phonemes: $phonemes")
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "Phonemes: $phonemes", Toast.LENGTH_LONG).show()
+                }
+                PerfHud.record("ONNX synth") {
+                    createAudio(
+                        voice = style,
+                        phonemes = phonemes,
+                        speed = speed,
+                        context = context,
+                        session = session
+                    )
+                }
             }
 
             playAudio(
-                audioData, scope,
+                audioData,
+                sampleRate,
+                scope,
                 onComplete = onComplete
             )
 
             showPlaybackNotification(context)
 
             if (shouldSave) {
-                saveAudio(audioData, context, style)
+                saveAudio(audioData, context, style, sampleRate)
             }
         } catch (e: Exception) {
             DebugLogger.log("Error: ${e.message}")
@@ -256,13 +279,12 @@ private fun screenFromString(name: String?): Screen = when (name) {
     "Basic" -> Screen.Basic
     "Mixer" -> Screen.Mixer
     "Book" -> Screen.Book
-    "Chat" -> Screen.Chat
     "ChatTts" -> Screen.ChatTts
     "More" -> Screen.More
     "Creations" -> Screen.Creations
     "Settings" -> Screen.Settings
-    "About" -> Screen.About
     "Models" -> Screen.Models
+    "DebugLog" -> Screen.DebugLog
     else -> Screen.Basic
 }
 
@@ -270,13 +292,13 @@ sealed class Screen(val title: String) {
     object Basic : Screen("Basic TTS")
     object Mixer : Screen("Mixer")
     object Book : Screen("Audio Book")
-    object Chat : Screen("Chat") // Existing Chat (for ChatActivity)
     object ChatTts : Screen("Chat TTS") // New screen state for ChatTtsActivity if needed for selection
     object More : Screen("More")
     object Creations : Screen("Creations")
     object Settings : Screen("Settings")
-    object About : Screen("About this app")
     object Models : Screen("Models")
+    object DebugLog : Screen("Debug Log")
+    object Credits : Screen("Credits")
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -289,18 +311,12 @@ fun MainScreen(
     initialScreen: Screen = Screen.Basic
 ) {
     var currentScreen by remember { mutableStateOf(initialScreen) }
-    var hudEnabled by remember { mutableStateOf(false) }
     val context = LocalContext.current
-    val viewModel: MainViewModel = viewModel { MainViewModel(context) }
-
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text(currentScreen.title) },
-                actions = {
-                    Switch(checked = hudEnabled, onCheckedChange = { checked -> hudEnabled = checked })
-                }
+                title = { Text(currentScreen.title) }
             )
         },
         bottomBar = {
@@ -312,29 +328,17 @@ fun MainScreen(
                     onClick = { currentScreen = Screen.Basic }
                 )
                 NavigationBarItem(
-                    icon = { Icon(Icons.Default.Info, contentDescription = "Mixer") },
+                    icon = { Icon(Icons.Default.VolumeUp, contentDescription = "Mixer") },
                     label = { Text("Mixer") },
                     selected = currentScreen == Screen.Mixer,
                     onClick = { currentScreen = Screen.Mixer }
                 )
                 NavigationBarItem(
-                    icon = { Icon(Icons.Default.Info, contentDescription = "Book") },
+                    icon = { Icon(Icons.Default.MenuBook, contentDescription = "Book") },
                     label = { Text("Book") },
                     selected = currentScreen == Screen.Book,
                     onClick = { currentScreen = Screen.Book }
                 )
-                NavigationBarItem(
-                    icon = { Icon(Icons.Default.Info, contentDescription = "Chat") }, // Existing Chat
-                    label = { Text("Chat") },
-                    selected = currentScreen == Screen.Chat, // This might not highlight correctly if always launching an activity
-                    onClick = {
-                        context.startActivity(Intent(context, ChatActivity::class.java))
-                        // Optionally set currentScreen if you want to try and reflect selection,
-                        // but launching a new activity makes this tricky.
-                        // currentScreen = Screen.Chat
-                    }
-                )
-                // START --- New NavigationBarItem for ChatTtsActivity ---
                 NavigationBarItem(
                     icon = { Icon(Icons.Filled.RecordVoiceOver, contentDescription = "Chat TTS") }, // Example new icon
                     label = { Text("Chat TTS") },
@@ -344,14 +348,7 @@ fun MainScreen(
                         // currentScreen = Screen.ChatTts // If you want to try and reflect selection
                     }
                 )
-                // END --- New NavigationBarItem for ChatTtsActivity ---
                 NavigationBarItem(
-                    icon = { Icon(Icons.Default.Info, contentDescription = "About") },
-                    label = { Text("About") },
-                    selected = currentScreen == Screen.About,
-                    onClick = { currentScreen = Screen.About }
-                )
-                 NavigationBarItem(
                     icon = { Icon(Icons.Default.MoreHoriz, contentDescription = "More") },
                     label = { Text("More") },
                     selected = currentScreen == Screen.More,
@@ -362,9 +359,8 @@ fun MainScreen(
     ) { innerPadding ->
         Box(modifier = Modifier.padding(innerPadding)) {
             when (currentScreen) {
-                Screen.Basic -> BasicScreen(session = session, onGenerateAudio = onGenerateAudio, viewModel = viewModel)
+                Screen.Basic -> BasicScreen(onGenerateAudio = onGenerateAudio)
                 Screen.Mixer -> MixerScreen(
-                    session = session,
                     phonemeConverter = phonemeConverter,
                     styleLoader = StyleLoader(context)
                 )
@@ -372,9 +368,6 @@ fun MainScreen(
                     session = session,
                     phonemeConverter = phonemeConverter
                 )
-                Screen.Chat -> {
-                    // No-op, handled by onClick which starts ChatActivity
-                }
                 Screen.ChatTts -> {
                     // No-op, handled by onClick which starts ChatTtsActivity
                     // This case is primarily for the 'selected' state of the NavigationBarItem
@@ -384,13 +377,16 @@ fun MainScreen(
                         "Creations" -> Screen.Creations
                         "Settings" -> Screen.Settings
                         "Models" -> Screen.Models
+                        "Credits" -> Screen.Credits
+                        "DebugLog" -> Screen.DebugLog
                         else -> currentScreen
                     }
                 }
                 Screen.Creations -> CreationsScreen()
                 Screen.Settings -> SettingsScreen()
-                Screen.About -> AboutScreen()
                 Screen.Models -> ModelsScreen(userPreferencesRepository)
+                Screen.Credits -> CreditsConstellationScreen()
+                Screen.DebugLog -> DebugLogScreen()
             }
         }
     }
@@ -399,16 +395,15 @@ fun MainScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BasicScreen(
-    session: OrtSession,
     onGenerateAudio: (String, String, Float, Boolean, () -> Unit) -> Unit,
-    viewModel: MainViewModel
 ) {
     val context = LocalContext.current
-    val styleLoader = remember { StyleLoader(context) }
+    var engine by remember { mutableStateOf(SettingsManager.getTtsEngine(context)) }
+    val styleLoader = remember(engine) { StyleLoader(context) }
     val names = styleLoader.names.sorted()
 
     var text by remember { mutableStateOf("This is her warm heart, her warmest kokoro, unwavering love and comfort.") }
-    var style by remember {
+    var style by remember(engine) {
         mutableStateOf(
             SettingsManager.getStyle(context).takeIf { it in names }
                 ?: names.firstOrNull().orEmpty()
@@ -418,19 +413,15 @@ fun BasicScreen(
     var isProcessing by remember { mutableStateOf(false) }
     var shouldSaveFile by remember { mutableStateOf(false) }
 
-    val modelManager = remember { com.example.kokoro82m.data.ModelManager(context) }
-    val models = remember { modelManager.models.filter { it.isDownloaded } }
-    var selectedModel by remember { mutableStateOf(models.firstOrNull()) }
-
-    LaunchedEffect(selectedModel) {
-        selectedModel?.let {
-            val modelFile = java.io.File(context.filesDir, "models/${it.id}.task")
-            viewModel.reinitializeSession(modelFile.absolutePath)
+    LaunchedEffect(engine) {
+        withContext(Dispatchers.IO) {
+            OnnxRuntimeManager.initialize(context.applicationContext)
         }
+        SettingsManager.setStyle(context, style)
     }
 
     var expanded by remember { mutableStateOf(false) }
-    var modelExpanded by remember { mutableStateOf(false) }
+    var engineExpanded by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -451,33 +442,34 @@ fun BasicScreen(
         )
 
         ExposedDropdownMenuBox(
-            expanded = modelExpanded,
-            onExpandedChange = { modelExpanded = !modelExpanded },
+            expanded = engineExpanded,
+            onExpandedChange = { engineExpanded = !engineExpanded },
             modifier = Modifier.fillMaxWidth()
         ) {
             TextField(
-                value = selectedModel?.name ?: "Select a model",
-                onValueChange = { },
-                label = { Text("Model") },
+                value = engine.name,
+                onValueChange = {},
+                label = { Text("TTS Engine") },
                 modifier = Modifier
                     .fillMaxWidth()
                     .menuAnchor(),
                 readOnly = true,
                 trailingIcon = {
-                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = modelExpanded)
+                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = engineExpanded)
                 }
             )
 
-            ExposedDropdownMenu(
-                expanded = modelExpanded,
-                onDismissRequest = { modelExpanded = false }
+            DropdownMenu(
+                expanded = engineExpanded,
+                onDismissRequest = { engineExpanded = false }
             ) {
-                models.forEach { model ->
+                TtsEngine.values().forEach { option ->
                     DropdownMenuItem(
-                        text = { Text(model.name) },
+                        text = { Text(option.name) },
                         onClick = {
-                            selectedModel = model
-                            modelExpanded = false
+                            engine = option
+                            SettingsManager.setTtsEngine(context, option)
+                            engineExpanded = false
                         }
                     )
                 }
@@ -505,7 +497,7 @@ fun BasicScreen(
                 }
             )
 
-            ExposedDropdownMenu(
+            DropdownMenu(
                 expanded = expanded,
                 onDismissRequest = { expanded = false }
             ) {
@@ -578,16 +570,6 @@ fun BasicScreen(
     }
 }
 
-@Composable
-fun AboutScreen() {
-    Column(
-        modifier = Modifier
-            .padding(16.dp)
-            .fillMaxSize()
-    ) {
-        Acknowledgements()
-    }
-}
 
 //@Preview(showBackground = true)
 //@Composable

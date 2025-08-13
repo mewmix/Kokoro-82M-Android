@@ -24,6 +24,11 @@ class MainViewModel(private val context: Context) : ViewModel() {
             OnnxRuntimeManager.reinitialize(context, modelPath)
         }
     }
+
+    override fun onCleared() {
+        super.onCleared()
+        OnnxRuntimeManager.close()
+    }
 }
 
 object OnnxRuntimeManager {
@@ -57,8 +62,13 @@ object OnnxRuntimeManager {
             addConfigEntry("nnapi.gpu_precision_loss_allowed", "true")
         }
 
-        return context.resources.openRawResource(R.raw.kokoro).use { stream ->
-            environment!!.createSession(stream.readBytes(), options)
+        return when (SettingsManager.getTtsEngine(context)) {
+            TtsEngine.KOKORO -> context.resources.openRawResource(R.raw.kokoro).use { stream ->
+                environment!!.createSession(stream.readBytes(), options)
+            }
+            TtsEngine.KITTEN -> context.assets.open("kitten_tts/kitten_tts_nano_v0_1.onnx").use { stream ->
+                environment!!.createSession(stream.readBytes(), options)
+            }
         }
     }
 
@@ -74,5 +84,10 @@ object OnnxRuntimeManager {
 
 
     fun getSession() = requireNotNull(session) { "ONNX Session not initialized" }
+
+    fun close() {
+        session?.close()
+        environment?.close()
+    }
 }
 

@@ -1,26 +1,33 @@
 package com.example.kokoro82m.viewmodel
 
+import android.app.Application
 import android.content.Context
 import android.net.Uri
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import ai.onnxruntime.OrtSession
 import com.example.kokoro82m.utils.AudioPlayer
 import com.example.kokoro82m.utils.AudioPlayerManager
 import com.example.kokoro82m.utils.InterpolationMode
+import com.example.kokoro82m.utils.ChunkFeeder
+import com.example.kokoro82m.utils.KittenAudioPlayer
+import com.example.kokoro82m.utils.KokoroAudioPlayer
 import com.example.kokoro82m.utils.PhonemeConverter
 import com.example.kokoro82m.utils.PlayerState
 import com.example.kokoro82m.utils.PlaybackNotification
 import com.example.kokoro82m.utils.StyleLoader
+import com.example.kokoro82m.utils.DocumentReader
+import com.example.kokoro82m.utils.TtsEngine
 import com.example.kokoro82m.utils.playBook
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class BookViewModel : ViewModel() {
+class BookViewModel(private val app: Application) : AndroidViewModel(app) {
     private val _bookUri = MutableStateFlow<Uri?>(null)
     val bookUri = _bookUri.asStateFlow()
 
@@ -35,26 +42,34 @@ class BookViewModel : ViewModel() {
 
     private var appContext: Context? = null
 
-    val audioPlayer = AudioPlayer(
-        scope = viewModelScope,
-        onStateChanged = { state ->
-            _playerState.value = state
-            appContext?.let { PlaybackNotification.update(it, state) }
+    private var _audioPlayer: AudioPlayer? = null
+    val audioPlayer: AudioPlayer
+        get() = _audioPlayer!!
+
+    private fun initializeAudioPlayer(engine: TtsEngine) {
+        _audioPlayer = when (engine) {
+            TtsEngine.KOKORO -> KokoroAudioPlayer(viewModelScope) { state ->
+                _playerState.value = state
+                appContext?.let { PlaybackNotification.update(it, state) }
+            }
+            TtsEngine.KITTEN -> KittenAudioPlayer(viewModelScope) { state ->
+                _playerState.value = state
+                appContext?.let { PlaybackNotification.update(it, state) }
+            }
         }
-    )
+    }
 
     private var playJob: Job? = null
 
     fun loadBook(context: Context, uri: Uri) {
         _bookUri.value = uri
         viewModelScope.launch(Dispatchers.IO) {
-            val text = try {
-                context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
-            } catch (e: Exception) {
-                null
-            } ?: ""
+            val lines = DocumentReader
+                .asFlow(context, uri, byLine = true, lineLength = 120)
+                .chunks
+                .toList()
             withContext(Dispatchers.Main) {
-                _lines.value = text.lines()
+                _lines.value = lines
             }
         }
     }
@@ -75,11 +90,13 @@ class BookViewModel : ViewModel() {
         startLine: Int,
         bookUri: Uri?,
         context: Context,
+        engine: TtsEngine,
         usePregenerated: Boolean,
         onFinished: () -> Unit,
     ) {
         playJob?.cancel()
         appContext = context.applicationContext
+        initializeAudioPlayer(engine)
         AudioPlayerManager.player = audioPlayer
         PlaybackNotification.show(appContext!!, true)
         playJob = playBook(
@@ -105,8 +122,17 @@ class BookViewModel : ViewModel() {
     fun stopPlayback() {
         playJob?.cancel()
         playJob = null
-        audioPlayer.stop()
+        _audioPlayer?.stop()
         appContext?.let { PlaybackNotification.cancel(it) }
         AudioPlayerManager.player = null
+    }
+
+    fun openDocument(uri: Uri) {
+        val result = DocumentReader.asFlow(app, uri, byLine = true, lineLength = 120)
+        ChunkFeeder.start(viewModelScope, result.chunks)
+    }
+
+    fun stopReading() {
+        ChunkFeeder.stop()
     }
 }

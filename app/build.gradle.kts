@@ -46,6 +46,7 @@ android {
 dependencies {
     implementation(project(":app-chat"))
     implementation(project(":core-utils"))
+    implementation(project(":app-tts"))
     implementation("com.google.ai.edge.litert:litert:1.0.1")
     runtimeOnly("com.google.ai.edge.litert:litert-gpu:1.0.1")
     implementation("com.google.mediapipe:tasks-core:latest.release")
@@ -68,6 +69,9 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.mockito.core)
     testImplementation(libs.mockito.inline)
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
+    testImplementation("androidx.test:core:1.5.0")
+    testImplementation("org.robolectric:robolectric:4.11.1")
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
@@ -81,6 +85,9 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.1")
     implementation(libs.material3)
     implementation("com.github.medavox:IPA-Transcribers:v0.2")
+    implementation("com.tom-roush:pdfbox-android:2.0.27.0")
+    implementation("org.jsoup:jsoup:1.17.2")
+    implementation("androidx.documentfile:documentfile:1.0.1")
 
     val lifecycle_version = "2.8.7"
     val arch_version = "2.2.0"

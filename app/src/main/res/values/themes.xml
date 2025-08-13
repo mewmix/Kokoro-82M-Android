@@ -7,7 +7,7 @@
 
     <style name="AppTheme.Splash" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/nabu_launcher_background</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_nabu_foreground</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_nabu_logo</item>
         <item name="postSplashScreenTheme">@style/AppTheme</item>
     </style>
 </resources>
