@@ -37,7 +37,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.RecordVoiceOver
 import androidx.compose.material3.Button
@@ -63,6 +62,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
@@ -327,13 +327,23 @@ fun MainScreen(
                     onClick = { currentScreen = Screen.Basic }
                 )
                 NavigationBarItem(
-                    icon = { Icon(Icons.Default.Info, contentDescription = "Mixer") },
+                    icon = {
+                        Icon(
+                            painterResource(id = R.drawable.instant_mix_24),
+                            contentDescription = "Mixer"
+                        )
+                    },
                     label = { Text("Mixer") },
                     selected = currentScreen == Screen.Mixer,
                     onClick = { currentScreen = Screen.Mixer }
                 )
                 NavigationBarItem(
-                    icon = { Icon(Icons.Default.Info, contentDescription = "Book") },
+                    icon = {
+                        Icon(
+                            painterResource(id = R.drawable.books_movies_and_music_24),
+                            contentDescription = "Book"
+                        )
+                    },
                     label = { Text("Book") },
                     selected = currentScreen == Screen.Book,
                     onClick = { currentScreen = Screen.Book }
