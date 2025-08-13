@@ -62,6 +62,9 @@ class ChatTtsViewModel(
     private val _speed = MutableStateFlow(1.0f)
     val speed = _speed.asStateFlow()
 
+    private val _voiceEnabled = MutableStateFlow(true)
+    val voiceEnabled = _voiceEnabled.asStateFlow()
+
     private val audioQueue = Channel<FloatArray>(Channel.UNLIMITED)
 
     init {
@@ -130,7 +133,19 @@ class ChatTtsViewModel(
         }
     }
 
+    fun toggleVoice() {
+        val newState = !_voiceEnabled.value
+        _voiceEnabled.value = newState
+        if (!newState) {
+            audioPlayer.stop()
+            while (!audioQueue.isEmpty) {
+                audioQueue.tryReceive().getOrNull()
+            }
+        }
+    }
+
     private fun synthesizeAndQueue(text: String) {
+        if (!_voiceEnabled.value) return
         viewModelScope.launch {
             _isSynthesizing.value = true
             try {
