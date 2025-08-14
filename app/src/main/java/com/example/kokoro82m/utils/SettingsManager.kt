@@ -10,11 +10,18 @@ object SettingsManager {
     fun isDebug(context: Context): Boolean =
         (DatabaseManager.getSetting(context, "debug") ?: "0") == "1"
 
+    fun setBenchmark(context: Context, enabled: Boolean) {
+        DatabaseManager.setSetting(context, "benchmark", if (enabled) "1" else "0")
+    }
+
+    fun isBenchmark(context: Context): Boolean =
+        (DatabaseManager.getSetting(context, "benchmark") ?: "0") == "1"
+
     fun setStyle(context: Context, style: String) {
         DatabaseManager.setSetting(context, "style", style)
     }
 
-    fun getStyle(context: Context, default: String = "af_sarah"): String =
+    fun getStyle(context: Context, default: String = "af_sky"): String =
         DatabaseManager.getSetting(context, "style") ?: default
 
     fun setSpeed(context: Context, speed: Float) {
