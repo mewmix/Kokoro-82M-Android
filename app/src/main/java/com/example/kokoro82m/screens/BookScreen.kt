@@ -62,7 +62,7 @@ fun BookScreen(
     val listState = rememberLazyListState()
 
     val styleLoader = remember { StyleLoader(context) }
-    val defaultVoice = styleLoader.names.firstOrNull() ?: "af_sarah"
+    val defaultVoice = styleLoader.names.firstOrNull() ?: "af_sky"
     var selectedStyles by remember { mutableStateOf(listOf(defaultVoice)) }
     var weights by remember { mutableStateOf(mapOf(defaultVoice to 1f)) }
     var interpolationMode by remember { mutableStateOf(InterpolationMode.LINEAR) }

@@ -14,7 +14,7 @@ object SettingsManager {
         DatabaseManager.setSetting(context, "style", style)
     }
 
-    fun getStyle(context: Context, default: String = "af_sarah"): String =
+    fun getStyle(context: Context, default: String = "af_sky"): String =
         DatabaseManager.getSetting(context, "style") ?: default
 
     fun setSpeed(context: Context, speed: Float) {

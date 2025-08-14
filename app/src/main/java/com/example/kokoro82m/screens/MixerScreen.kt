@@ -83,7 +83,7 @@ fun MixerScreen(
     var isProcessing by remember { mutableStateOf(false) }
     var shouldSaveFile by remember { mutableStateOf(false) }
 
-    val defaultVoice = styleLoader.names.firstOrNull() ?: "af_sarah"
+    val defaultVoice = styleLoader.names.firstOrNull() ?: "af_sky"
     val initial = remember {
         loadStyleConfig(context) ?: Triple(
             listOf(defaultVoice),

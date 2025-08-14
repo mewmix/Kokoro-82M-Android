@@ -37,7 +37,7 @@ class ChatTtsViewModel(
     // Dependencies
     private val phonemeConverter = PhonemeConverter(context)
     val styleLoader = StyleLoader(context)
-    private val defaultVoice = styleLoader.names.firstOrNull() ?: "af_sarah"
+    private val defaultVoice = styleLoader.names.firstOrNull() ?: "af_sky"
     private val audioPlayer: AudioPlayer = when (SettingsManager.getTtsEngine(context)) {
         TtsEngine.KOKORO -> KokoroAudioPlayer(viewModelScope) { newState ->
             _playerState.value = newState
