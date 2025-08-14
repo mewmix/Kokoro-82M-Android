@@ -20,6 +20,13 @@
     "downloadUrl": "https://huggingface.co/litert-community/Gemma3-1B-IT/resolve/main/Gemma3-1B-IT_multi-prefill-seq_q4_ekv2048.task",
     "gated": false
   },
+  "gemma3-270m-it-q8": {
+    "name": "Gemma3 270M IT q8",
+    "description": "An 8-bit variant of Gemma3 270M IT for Android",
+    "repo": "litert-community/gemma-3-270m-it",
+    "downloadUrl": "https://huggingface.co/litert-community/gemma-3-270m-it/resolve/main/gemma3-270m-it-q8.task",
+    "gated": false
+  },
   "qwen2.5-1.5b-instruct-q8": {
     "name": "Qwen2.5 1.5B Instruct q8",
     "description": "A quantized 8-bit Qwen2.5 1.5B Instruct model",
